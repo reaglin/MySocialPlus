@@ -25,7 +25,15 @@ public sealed class AppSession : IDisposable
     }
 
     public static AppSession Open(DataPaths paths, bool readNetworks) =>
-        new(paths, TreeStore.Load(paths.TreeFile), new ItemCache(paths.ItemsDb), readNetworks);
+        new(paths, TreeStore.Load(paths.TreeFile), new ItemCache(paths.ItemsDb), readNetworks)
+        {
+            Templates = TemplateStore.Load(paths.TemplatesFile),
+        };
+
+    /// <summary>The kinds of people, events and things (templates.json — Ron's to edit).</summary>
+    public TemplateSet Templates { get; private init; } = new();
+
+    public void SaveTemplates() { if (ReadsNetworks) TemplateStore.Save(Templates, Paths.TemplatesFile); }
 
     public DataPaths Paths { get; }
     public SocialTree Tree { get; }

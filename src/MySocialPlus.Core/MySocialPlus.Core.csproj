@@ -13,6 +13,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The kinds of people, events and things a first run starts with (TemplateStore). -->
+    <EmbeddedResource Include="Templates\default-templates.json" LogicalName="MySocialPlus.Core.Templates.default-templates.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="MySocialPlus.Tests" />
   </ItemGroup>
 

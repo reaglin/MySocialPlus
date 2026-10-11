@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace MySocialPlus.Core.Model;
 
 /// <summary>
-/// Ron's whole tree: the roots in order, starting with My Posts and My Friends. Every change goes
+/// Ron's whole tree: the roots in order, My Posts, My Friends, My Events and My Things. Every change goes
 /// through here so parent links stay right and the rules hold (people go in topics, accounts go in
 /// people or under My Posts, roots stay put).
 /// </summary>
@@ -12,6 +12,12 @@ public sealed class SocialTree
 {
     public const string MyPostsId = "my-posts";
     public const string MyFriendsId = "my-friends";
+    public const string MyEventsId = "my-events";
+    public const string MyThingsId = "my-things";
+
+    /// <summary>The roots in their order, with their names. Every tree has all four.</summary>
+    public static IReadOnlyList<(string Id, string Name)> RootIds { get; } =
+        [(MyPostsId, "My Posts"), (MyFriendsId, "My Friends"), (MyEventsId, "My Events"), (MyThingsId, "My Things")];
 
     public int Version { get; set; } = 1;
     public List<TreeNode> Roots { get; set; } = [];
@@ -21,6 +27,8 @@ public sealed class SocialTree
 
     [JsonIgnore] public TreeNode MyPosts => Roots.First(r => r.Id == MyPostsId);
     [JsonIgnore] public TreeNode MyFriends => Roots.First(r => r.Id == MyFriendsId);
+    [JsonIgnore] public TreeNode MyEvents => Roots.First(r => r.Id == MyEventsId);
+    [JsonIgnore] public TreeNode MyThings => Roots.First(r => r.Id == MyThingsId);
 
     public static SocialTree CreateNew()
     {
@@ -29,13 +37,15 @@ public sealed class SocialTree
         return t;
     }
 
-    /// <summary>Puts back the two roots if the file lacks them, and sets every parent link.</summary>
+    /// <summary>Puts back any root the file lacks (an older file has two), in order, and sets every parent link.</summary>
     public void EnsureRoots()
     {
-        if (!Roots.Any(r => r.Id == MyPostsId))
-            Roots.Insert(0, new TreeNode { Id = MyPostsId, Kind = NodeKind.Root, Name = "My Posts", Expanded = true });
-        if (!Roots.Any(r => r.Id == MyFriendsId))
-            Roots.Insert(1, new TreeNode { Id = MyFriendsId, Kind = NodeKind.Root, Name = "My Friends", Expanded = true });
+        for (var i = 0; i < RootIds.Count; i++)
+        {
+            var (id, name) = RootIds[i];
+            if (!Roots.Any(r => r.Id == id))
+                Roots.Insert(Math.Min(i, Roots.Count), new TreeNode { Id = id, Kind = NodeKind.Root, Name = name, Expanded = true });
+        }
         foreach (var r in Roots) { r.Parent = null; Relink(r); }
     }
 
@@ -56,20 +66,37 @@ public sealed class SocialTree
     {
         if (ReferenceEquals(parent, child) || child.IsAncestorOf(parent))
             return "A node cannot go inside itself.";
-        if (child.Kind == NodeKind.Root) return "My Posts and My Friends stay at the top.";
-        var root = parent.Root;
+        if (child.Kind == NodeKind.Root) return "The four headings stay at the top.";
+        var root = parent.Root.Id;
+        // A topic keeps to its own heading: a topic of things cannot become a topic of friends.
+        if (child.Parent is not null && child.Kind == NodeKind.Topic && child.Root.Id != root)
+            return "A topic stays under its own heading. Make a new topic there instead.";
+        var inGroup = parent.Kind is NodeKind.Root or NodeKind.Topic;
         return child.Kind switch
         {
-            NodeKind.Topic when parent.Kind is NodeKind.Root or NodeKind.Topic && root.Id != MyPostsId => null,
-            NodeKind.Topic => "Topics go under My Friends or inside another topic.",
-            NodeKind.Person when parent.Kind is NodeKind.Root or NodeKind.Topic && root.Id != MyPostsId => null,
-            NodeKind.Person => "People go under My Friends or inside a topic.",
+            NodeKind.Topic when inGroup && root != MyPostsId => null,
+            NodeKind.Topic => "Topics go under My Friends, My Events or My Things, or inside another topic.",
+            NodeKind.Person when inGroup && root == MyFriendsId => null,
+            NodeKind.Person => "People go under My Friends or inside one of its topics.",
+            NodeKind.Event when inGroup && root == MyEventsId => null,
+            NodeKind.Event => "Events go under My Events or inside one of its topics.",
+            NodeKind.Thing when inGroup && root == MyThingsId => null,
+            NodeKind.Thing => "Things go under My Things or inside one of its topics.",
             NodeKind.Account when parent.Kind == NodeKind.Person => null,
             NodeKind.Account when parent.Id == MyPostsId => null,
             NodeKind.Account => "An account goes inside a person, or under My Posts if it is yours.",
             _ => "That cannot go there.",
         };
     }
+
+    /// <summary>The people in My Friends, for choosing who is going to an event.</summary>
+    public IEnumerable<TreeNode> People() => MyFriends.SelfAndDescendants().Where(n => n.Kind == NodeKind.Person);
+
+    /// <summary>Events a person is going to, soonest first.</summary>
+    public IEnumerable<TreeNode> EventsWith(TreeNode person) =>
+        MyEvents.SelfAndDescendants()
+                .Where(n => n.Event?.People.Any(p => p.PersonId == person.Id) == true)
+                .OrderBy(n => n.Event!.Start ?? DateTime.MaxValue);
 
     public void Add(TreeNode parent, TreeNode child, int index = -1)
     {
@@ -109,7 +136,7 @@ public sealed class SocialTree
 
     public static void Rename(TreeNode node, string name)
     {
-        if (node.Kind == NodeKind.Root) throw new InvalidOperationException("My Posts and My Friends keep their names.");
+        if (node.Kind == NodeKind.Root) throw new InvalidOperationException("The four headings keep their names.");
         name = name.Trim();
         if (name.Length == 0) throw new InvalidOperationException("Type a name.");
         node.Name = name;
@@ -117,7 +144,7 @@ public sealed class SocialTree
 
     public void Delete(TreeNode node)
     {
-        if (node.Kind == NodeKind.Root) throw new InvalidOperationException("My Posts and My Friends cannot be deleted.");
+        if (node.Kind == NodeKind.Root) throw new InvalidOperationException("The four headings cannot be deleted.");
         node.Parent?.Children.Remove(node);
         node.Parent = null;
     }

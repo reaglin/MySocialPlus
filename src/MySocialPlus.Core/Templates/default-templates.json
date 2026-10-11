@@ -1,0 +1,499 @@
+{
+  "version": 1,
+  "templates": [
+    {
+      "name": "Friend", "for": "person", "group": "People", "logName": "Notes from talks",
+      "fields": [
+        { "name": "Birthday", "kind": "birthday", "hint": "The year is optional." },
+        { "name": "Partner", "kind": "text" },
+        { "name": "Children", "kind": "text", "hint": "Names and ages, like: Maya (9), Leo (6)" },
+        { "name": "Pets", "kind": "text" },
+        { "name": "Likes", "kind": "note", "hint": "Hobbies, teams, music, food — anything worth remembering" },
+        { "name": "Dislikes", "kind": "note" },
+        { "name": "Gift ideas", "kind": "note" },
+        { "name": "How we met", "kind": "note" },
+        { "name": "Work", "kind": "text" },
+        { "name": "Phone", "kind": "phone" },
+        { "name": "Email", "kind": "email" },
+        { "name": "Address", "kind": "note" },
+        { "name": "Google Photos", "kind": "link", "hint": "In Google Photos: People & pets, pick them, then copy the address from the browser and paste it here" }
+      ]
+    },
+    {
+      "name": "Family member", "for": "person", "group": "People", "logName": "Notes",
+      "fields": [
+        { "name": "Relationship", "kind": "text", "hint": "Sister, nephew, grandmother…" },
+        { "name": "Birthday", "kind": "birthday" },
+        { "name": "Anniversary", "kind": "date", "remind": true },
+        { "name": "Partner", "kind": "text" },
+        { "name": "Children", "kind": "text" },
+        { "name": "Likes", "kind": "note" },
+        { "name": "Clothing sizes", "kind": "text" },
+        { "name": "Gift ideas", "kind": "note" },
+        { "name": "Phone", "kind": "phone" },
+        { "name": "Address", "kind": "note" },
+        { "name": "Google Photos", "kind": "link", "hint": "In Google Photos: People & pets, pick them, then copy the address from the browser and paste it here" }
+      ]
+    },
+    {
+      "name": "Colleague", "for": "person", "group": "People", "logName": "Notes",
+      "fields": [
+        { "name": "Organization", "kind": "text" },
+        { "name": "Role", "kind": "text" },
+        { "name": "Birthday", "kind": "birthday" },
+        { "name": "Projects together", "kind": "note" },
+        { "name": "Interests", "kind": "note" },
+        { "name": "Phone", "kind": "phone" },
+        { "name": "Email", "kind": "email" },
+        { "name": "Google Photos", "kind": "link", "hint": "In Google Photos: People & pets, pick them, then copy the address from the browser and paste it here" }
+      ]
+    },
+
+    {
+      "name": "Concert", "for": "event", "group": "Shows",
+      "fields": [
+        { "name": "Performer", "kind": "text" },
+        { "name": "Tickets", "kind": "text", "hint": "Where they are: the app, email, will call…" },
+        { "name": "Seats", "kind": "text" },
+        { "name": "Cost", "kind": "money" },
+        { "name": "Doors open", "kind": "text" },
+        { "name": "Parking", "kind": "note" },
+        { "name": "Event page", "kind": "link" }
+      ]
+    },
+    {
+      "name": "Theater or show", "for": "event", "group": "Shows",
+      "fields": [
+        { "name": "Show", "kind": "text" },
+        { "name": "Seats", "kind": "text" },
+        { "name": "Cost", "kind": "money" },
+        { "name": "Dinner before", "kind": "text" },
+        { "name": "Event page", "kind": "link" }
+      ]
+    },
+    {
+      "name": "Dance", "for": "event", "group": "Activities",
+      "fields": [
+        { "name": "Style", "kind": "text", "hint": "Swing, salsa, ballroom…" },
+        { "name": "Studio or hall", "kind": "text" },
+        { "name": "Instructor or DJ", "kind": "text" },
+        { "name": "Cost", "kind": "money" },
+        { "name": "What to wear", "kind": "note" },
+        { "name": "Event page", "kind": "link" }
+      ]
+    },
+    {
+      "name": "Race", "for": "event", "group": "Activities",
+      "fields": [
+        { "name": "Distance", "kind": "text", "hint": "5K, half marathon, 40K ride…" },
+        { "name": "Registered", "kind": "text", "hint": "Yes, or when registration opens" },
+        { "name": "Bib number", "kind": "text" },
+        { "name": "Packet pickup", "kind": "date", "remind": true },
+        { "name": "Start corral or wave", "kind": "text" },
+        { "name": "Goal time", "kind": "text" },
+        { "name": "Finish time", "kind": "text" },
+        { "name": "Place", "kind": "text", "hint": "Overall and in age group" },
+        { "name": "Cost", "kind": "money" },
+        { "name": "Results page", "kind": "link" }
+      ]
+    },
+    {
+      "name": "Adventure race", "for": "event", "group": "Activities",
+      "fields": [
+        { "name": "Team name", "kind": "text" },
+        { "name": "Division", "kind": "text", "hint": "Coed, masters, distance…" },
+        { "name": "Team captain", "kind": "text" },
+        { "name": "Registered", "kind": "text" },
+        { "name": "Race website", "kind": "link" },
+        { "name": "Rules and maps", "kind": "link" },
+        { "name": "Required gear", "kind": "note" },
+        { "name": "Team gear", "kind": "note", "hint": "Who brings what: boat, paddles, maps case…" },
+        { "name": "Lodging", "kind": "note" },
+        { "name": "Travel", "kind": "note" },
+        { "name": "Emergency contact", "kind": "phone" },
+        { "name": "Cost", "kind": "money" },
+        { "name": "Finish time", "kind": "text" },
+        { "name": "Place", "kind": "text" },
+        { "name": "Results page", "kind": "link" }
+      ]
+    },
+    {
+      "name": "Yoga or fitness class", "for": "event", "group": "Activities",
+      "fields": [
+        { "name": "Studio or gym", "kind": "text" },
+        { "name": "Instructor", "kind": "text" },
+        { "name": "Style or level", "kind": "text" },
+        { "name": "Bring", "kind": "text", "hint": "Mat, water, towel…" },
+        { "name": "Cost", "kind": "money" },
+        { "name": "Class pass", "kind": "text", "hint": "Classes left, or when it renews" },
+        { "name": "Booking page", "kind": "link" }
+      ]
+    },
+    {
+      "name": "Game or sports event", "for": "event", "group": "Shows",
+      "fields": [
+        { "name": "Teams", "kind": "text" },
+        { "name": "Seats", "kind": "text" },
+        { "name": "Tickets", "kind": "text" },
+        { "name": "Cost", "kind": "money" },
+        { "name": "Parking", "kind": "note" }
+      ]
+    },
+    {
+      "name": "Dinner or party", "for": "event", "group": "Social",
+      "fields": [
+        { "name": "Host", "kind": "text" },
+        { "name": "Occasion", "kind": "text" },
+        { "name": "Bring", "kind": "text" },
+        { "name": "Dress", "kind": "text" },
+        { "name": "Gift", "kind": "text" },
+        { "name": "RSVP by", "kind": "date", "remind": true }
+      ]
+    },
+    {
+      "name": "Trip", "for": "event", "group": "Social",
+      "fields": [
+        { "name": "Destination", "kind": "text" },
+        { "name": "Travel", "kind": "note", "hint": "Flights or drive, with confirmation numbers" },
+        { "name": "Lodging", "kind": "note" },
+        { "name": "Confirmation numbers", "kind": "note" },
+        { "name": "Packing list", "kind": "note" },
+        { "name": "Budget", "kind": "money" }
+      ]
+    },
+    {
+      "name": "Class or workshop", "for": "event", "group": "Activities",
+      "fields": [
+        { "name": "Topic", "kind": "text" },
+        { "name": "Teacher", "kind": "text" },
+        { "name": "Materials", "kind": "note" },
+        { "name": "Cost", "kind": "money" },
+        { "name": "Page", "kind": "link" }
+      ]
+    },
+    {
+      "name": "Volunteering", "for": "event", "group": "Social",
+      "fields": [
+        { "name": "Organization", "kind": "text" },
+        { "name": "Role", "kind": "text" },
+        { "name": "Contact", "kind": "text" },
+        { "name": "Hours", "kind": "number" }
+      ]
+    },
+    {
+      "name": "Appointment", "for": "event", "group": "Other",
+      "fields": [
+        { "name": "With", "kind": "text", "hint": "Doctor, dentist, mechanic…" },
+        { "name": "Phone", "kind": "phone" },
+        { "name": "Bring", "kind": "note" },
+        { "name": "Notes", "kind": "note" }
+      ]
+    },
+    {
+      "name": "Other event", "for": "event", "group": "Other",
+      "fields": [
+        { "name": "Cost", "kind": "money" },
+        { "name": "Page", "kind": "link" },
+        { "name": "Notes", "kind": "note" }
+      ]
+    },
+
+    {
+      "name": "Car", "for": "thing", "group": "Vehicles", "logName": "Service history",
+      "fields": [
+        { "name": "Year", "kind": "number" },
+        { "name": "Make", "kind": "text" },
+        { "name": "Model", "kind": "text" },
+        { "name": "Trim", "kind": "text" },
+        { "name": "Color", "kind": "text" },
+        { "name": "License plate", "kind": "text" },
+        { "name": "VIN", "kind": "text", "hint": "On the registration card and the driver's side of the dashboard" },
+        { "name": "Registration renews", "kind": "date", "remind": true },
+        { "name": "Insurance company", "kind": "text" },
+        { "name": "Policy number", "kind": "text" },
+        { "name": "Insurance renews", "kind": "date", "remind": true },
+        { "name": "Mileage", "kind": "number", "hint": "As of the last time you looked" },
+        { "name": "Next service due", "kind": "date", "remind": true },
+        { "name": "Oil type", "kind": "text" },
+        { "name": "Tire size", "kind": "text" },
+        { "name": "Purchased", "kind": "date" },
+        { "name": "Price paid", "kind": "money" },
+        { "name": "Dealer or mechanic", "kind": "text" }
+      ]
+    },
+    {
+      "name": "Motorcycle", "for": "thing", "group": "Vehicles", "logName": "Service history",
+      "fields": [
+        { "name": "Year", "kind": "number" },
+        { "name": "Make", "kind": "text" },
+        { "name": "Model", "kind": "text" },
+        { "name": "License plate", "kind": "text" },
+        { "name": "VIN", "kind": "text" },
+        { "name": "Registration renews", "kind": "date", "remind": true },
+        { "name": "Insurance renews", "kind": "date", "remind": true },
+        { "name": "Mileage", "kind": "number" },
+        { "name": "Tire sizes", "kind": "text" }
+      ]
+    },
+    {
+      "name": "Boat", "for": "thing", "group": "Vehicles", "logName": "Service history",
+      "fields": [
+        { "name": "Year", "kind": "number" },
+        { "name": "Make", "kind": "text" },
+        { "name": "Model", "kind": "text" },
+        { "name": "Length", "kind": "text" },
+        { "name": "Hull ID", "kind": "text" },
+        { "name": "Registration number", "kind": "text" },
+        { "name": "Registration renews", "kind": "date", "remind": true },
+        { "name": "Engine", "kind": "text" },
+        { "name": "Engine hours", "kind": "number" },
+        { "name": "Trailer plate", "kind": "text" },
+        { "name": "Slip or storage", "kind": "text" },
+        { "name": "Insurance renews", "kind": "date", "remind": true }
+      ]
+    },
+    {
+      "name": "Bicycle", "for": "thing", "group": "Vehicles", "logName": "Service history",
+      "fields": [
+        { "name": "Make", "kind": "text" },
+        { "name": "Model", "kind": "text" },
+        { "name": "Frame size", "kind": "text" },
+        { "name": "Serial number", "kind": "text", "hint": "Under the bottom bracket — useful if it is stolen" },
+        { "name": "Tire size", "kind": "text" },
+        { "name": "Purchased", "kind": "date" },
+        { "name": "Price paid", "kind": "money" }
+      ]
+    },
+
+    {
+      "name": "House", "for": "thing", "group": "Home", "logName": "Repairs and maintenance",
+      "fields": [
+        { "name": "Address", "kind": "note" },
+        { "name": "Purchased", "kind": "date" },
+        { "name": "Price paid", "kind": "money" },
+        { "name": "Mortgage company", "kind": "text" },
+        { "name": "Loan number", "kind": "text" },
+        { "name": "Property tax due", "kind": "date", "remind": true },
+        { "name": "Insurance company", "kind": "text" },
+        { "name": "Policy number", "kind": "text" },
+        { "name": "Insurance renews", "kind": "date", "remind": true },
+        { "name": "Air filter size", "kind": "text", "hint": "Printed on the edge of the filter, like 16x25x1" },
+        { "name": "Next filter change", "kind": "date", "remind": true },
+        { "name": "Water heater installed", "kind": "date" },
+        { "name": "Roof installed", "kind": "date" },
+        { "name": "AC or furnace installed", "kind": "date" },
+        { "name": "Paint colors", "kind": "note", "hint": "Room by room, with brand and color name" },
+        { "name": "Water shutoff", "kind": "text", "hint": "Where it is" },
+        { "name": "Breaker panel", "kind": "text", "hint": "Where it is" },
+        { "name": "Plumber", "kind": "phone" },
+        { "name": "Electrician", "kind": "phone" }
+      ]
+    },
+    {
+      "name": "Apartment or rental", "for": "thing", "group": "Home", "logName": "Requests and repairs",
+      "fields": [
+        { "name": "Address", "kind": "note" },
+        { "name": "Landlord or manager", "kind": "text" },
+        { "name": "Phone", "kind": "phone" },
+        { "name": "Rent", "kind": "money" },
+        { "name": "Lease ends", "kind": "date", "remind": true },
+        { "name": "Deposit paid", "kind": "money" },
+        { "name": "Renter's insurance renews", "kind": "date", "remind": true }
+      ]
+    },
+    {
+      "name": "Appliance", "for": "thing", "group": "Home", "logName": "Service and repairs",
+      "fields": [
+        { "name": "Brand", "kind": "text" },
+        { "name": "Model number", "kind": "text", "hint": "On a sticker inside the door or on the back" },
+        { "name": "Serial number", "kind": "text" },
+        { "name": "Purchased", "kind": "date" },
+        { "name": "Store", "kind": "text" },
+        { "name": "Price paid", "kind": "money" },
+        { "name": "Warranty ends", "kind": "date", "remind": true },
+        { "name": "Filter or parts", "kind": "text" },
+        { "name": "Manual", "kind": "link" }
+      ]
+    },
+    {
+      "name": "Coffee maker", "for": "thing", "group": "Kitchen", "logName": "Cleaning and descaling",
+      "fields": [
+        { "name": "Brand", "kind": "text" },
+        { "name": "Model", "kind": "text" },
+        { "name": "Purchased", "kind": "date" },
+        { "name": "Warranty ends", "kind": "date", "remind": true },
+        { "name": "Pods or filters", "kind": "text" },
+        { "name": "Water filter", "kind": "text" },
+        { "name": "Next descaling", "kind": "date", "remind": true },
+        { "name": "Manual", "kind": "link" }
+      ]
+    },
+    {
+      "name": "Kitchen gadget", "for": "thing", "group": "Kitchen",
+      "fields": [
+        { "name": "Brand", "kind": "text" },
+        { "name": "Model", "kind": "text" },
+        { "name": "Purchased", "kind": "date" },
+        { "name": "Warranty ends", "kind": "date", "remind": true },
+        { "name": "Parts and accessories", "kind": "note" },
+        { "name": "Manual", "kind": "link" }
+      ]
+    },
+    {
+      "name": "Computer", "for": "thing", "group": "Electronics", "logName": "Repairs and upgrades",
+      "fields": [
+        { "name": "Brand", "kind": "text" },
+        { "name": "Model", "kind": "text" },
+        { "name": "Serial number", "kind": "text" },
+        { "name": "Operating system", "kind": "text" },
+        { "name": "Processor", "kind": "text" },
+        { "name": "Memory", "kind": "text" },
+        { "name": "Storage", "kind": "text" },
+        { "name": "Purchased", "kind": "date" },
+        { "name": "Price paid", "kind": "money" },
+        { "name": "Warranty ends", "kind": "date", "remind": true },
+        { "name": "Backup", "kind": "note", "hint": "Where and how it is backed up. Never write passwords here: this file is not encrypted." }
+      ]
+    },
+    {
+      "name": "Phone or tablet", "for": "thing", "group": "Electronics", "logName": "Repairs",
+      "fields": [
+        { "name": "Brand", "kind": "text" },
+        { "name": "Model", "kind": "text" },
+        { "name": "Serial number or IMEI", "kind": "text" },
+        { "name": "Carrier", "kind": "text" },
+        { "name": "Purchased", "kind": "date" },
+        { "name": "Warranty or protection ends", "kind": "date", "remind": true },
+        { "name": "Case and charger", "kind": "text" }
+      ]
+    },
+    {
+      "name": "TV or audio", "for": "thing", "group": "Electronics",
+      "fields": [
+        { "name": "Brand", "kind": "text" },
+        { "name": "Model", "kind": "text" },
+        { "name": "Serial number", "kind": "text" },
+        { "name": "Size", "kind": "text" },
+        { "name": "Purchased", "kind": "date" },
+        { "name": "Warranty ends", "kind": "date", "remind": true },
+        { "name": "Remote and cables", "kind": "note" }
+      ]
+    },
+    {
+      "name": "Furniture", "for": "thing", "group": "Home",
+      "fields": [
+        { "name": "Maker", "kind": "text" },
+        { "name": "Style or collection", "kind": "text" },
+        { "name": "Material and finish", "kind": "text" },
+        { "name": "Fabric", "kind": "text" },
+        { "name": "Dimensions", "kind": "text" },
+        { "name": "Room", "kind": "text" },
+        { "name": "Purchased", "kind": "date" },
+        { "name": "Store", "kind": "text" },
+        { "name": "Price paid", "kind": "money" },
+        { "name": "Care", "kind": "note" }
+      ]
+    },
+    {
+      "name": "Tool or equipment", "for": "thing", "group": "Garage and yard", "logName": "Maintenance",
+      "fields": [
+        { "name": "Brand", "kind": "text" },
+        { "name": "Model", "kind": "text" },
+        { "name": "Serial number", "kind": "text" },
+        { "name": "Purchased", "kind": "date" },
+        { "name": "Blades, bits or batteries", "kind": "text" },
+        { "name": "Lent to", "kind": "text", "hint": "So you remember who has it" },
+        { "name": "Manual", "kind": "link" }
+      ]
+    },
+    {
+      "name": "Lawn mower", "for": "thing", "group": "Garage and yard", "logName": "Maintenance",
+      "fields": [
+        { "name": "Brand", "kind": "text" },
+        { "name": "Model", "kind": "text" },
+        { "name": "Serial number", "kind": "text" },
+        { "name": "Oil type", "kind": "text" },
+        { "name": "Spark plug", "kind": "text" },
+        { "name": "Blade", "kind": "text" },
+        { "name": "Next service", "kind": "date", "remind": true }
+      ]
+    },
+    {
+      "name": "Musical instrument", "for": "thing", "group": "Hobbies", "logName": "Service",
+      "fields": [
+        { "name": "Maker", "kind": "text" },
+        { "name": "Model", "kind": "text" },
+        { "name": "Serial number", "kind": "text" },
+        { "name": "Strings, reeds or heads", "kind": "text" },
+        { "name": "Purchased", "kind": "date" },
+        { "name": "Price paid", "kind": "money" },
+        { "name": "Appraised value", "kind": "money" }
+      ]
+    },
+    {
+      "name": "Sports gear", "for": "thing", "group": "Hobbies",
+      "fields": [
+        { "name": "Brand", "kind": "text" },
+        { "name": "Model", "kind": "text" },
+        { "name": "Size", "kind": "text" },
+        { "name": "Purchased", "kind": "date" },
+        { "name": "Miles or uses", "kind": "number", "hint": "Running shoes last about 300–500 miles" }
+      ]
+    },
+    {
+      "name": "Jewelry or watch", "for": "thing", "group": "Valuables", "logName": "Service and appraisals",
+      "fields": [
+        { "name": "Maker", "kind": "text" },
+        { "name": "Description", "kind": "note" },
+        { "name": "Serial number", "kind": "text" },
+        { "name": "Appraised value", "kind": "money" },
+        { "name": "Appraisal date", "kind": "date" },
+        { "name": "Insured with", "kind": "text" },
+        { "name": "Battery or service due", "kind": "date", "remind": true }
+      ]
+    },
+    {
+      "name": "Collectible or artwork", "for": "thing", "group": "Valuables",
+      "fields": [
+        { "name": "Artist or maker", "kind": "text" },
+        { "name": "Year made", "kind": "text" },
+        { "name": "Where acquired", "kind": "text" },
+        { "name": "Price paid", "kind": "money" },
+        { "name": "Appraised value", "kind": "money" },
+        { "name": "Provenance", "kind": "note" }
+      ]
+    },
+    {
+      "name": "Subscription or membership", "for": "thing", "group": "Accounts", "logName": "Payments",
+      "fields": [
+        { "name": "Provider", "kind": "text" },
+        { "name": "Member or account number", "kind": "text", "hint": "Never a password: this file is not encrypted" },
+        { "name": "Cost", "kind": "money" },
+        { "name": "Billed", "kind": "text", "hint": "Monthly, yearly…" },
+        { "name": "Renews", "kind": "date", "remind": true },
+        { "name": "How to cancel", "kind": "note" },
+        { "name": "Website", "kind": "link" }
+      ]
+    },
+    {
+      "name": "Document", "for": "thing", "group": "Accounts",
+      "fields": [
+        { "name": "Kind", "kind": "text", "hint": "Passport, driver's license, will, title…" },
+        { "name": "Number", "kind": "text" },
+        { "name": "Issued", "kind": "date" },
+        { "name": "Expires", "kind": "date", "remind": true },
+        { "name": "Where it is kept", "kind": "text" }
+      ]
+    },
+    {
+      "name": "Other thing", "for": "thing", "group": "Other",
+      "fields": [
+        { "name": "Brand", "kind": "text" },
+        { "name": "Model", "kind": "text" },
+        { "name": "Purchased", "kind": "date" },
+        { "name": "Price paid", "kind": "money" },
+        { "name": "Notes", "kind": "note" }
+      ]
+    }
+  ]
+}

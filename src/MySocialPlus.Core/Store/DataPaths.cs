@@ -25,4 +25,5 @@ public sealed class DataPaths
     public string TreeFile => Path.Combine(DataFolder, "tree.json");
     public string ItemsDb => Path.Combine(DataFolder, "items.db");
     public string SettingsFile => Path.Combine(DataFolder, "settings.json");
+    public string TemplatesFile => Path.Combine(DataFolder, "templates.json");
 }

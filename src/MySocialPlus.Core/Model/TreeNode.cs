@@ -3,15 +3,18 @@ using System.Text.Json.Serialization;
 
 namespace MySocialPlus.Core.Model;
 
-public enum NodeKind { Root, Topic, Person, Account }
+/// <summary>Saved by name in tree.json, so new kinds go at the end and none is renamed.</summary>
+public enum NodeKind { Root, Topic, Person, Account, Event, Thing }
 
 /// <summary>How a node's content is listed. Time order either way — never ranked (rule 2).</summary>
 public enum SortOrder { NewestFirst, OldestUnreadFirst }
 
 /// <summary>
-/// One node of Ron's tree, saved in tree.json. Roots hold topics and people (My Friends) or Ron's
-/// own accounts (My Posts); topics hold topics and people; people hold their accounts. Posts are
-/// not nodes in the file — they live in the item cache and are listed in the content pane.
+/// One node of Ron's tree, saved in tree.json. Four roots: My Posts (Ron's own accounts), My Friends
+/// (topics and people; people hold their accounts), My Events and My Things (topics, events, things).
+/// Posts are not nodes in the file — they live in the item cache and are listed in the content pane.
+/// People, events and things carry <see cref="Details"/> (name/value pairs) and a <see cref="Log"/>,
+/// so new kinds of information need no code (Ron, 2026-10-11).
 /// </summary>
 public sealed class TreeNode
 {
@@ -21,6 +24,18 @@ public sealed class TreeNode
 
     /// <summary>Only on Account nodes.</summary>
     public Account? Account { get; set; }
+
+    /// <summary>The kind of person, event or thing ("Car", "Race", "Friend") — the template it started from.</summary>
+    public string? TypeName { get; set; }
+
+    /// <summary>What Ron keeps about it: birthday, license plate, bib number… in his order.</summary>
+    public List<Detail> Details { get; set; } = [];
+
+    /// <summary>Dated entries: a car's services, a house's repairs, notes from a talk with a friend.</summary>
+    public List<LogEntry> Log { get; set; } = [];
+
+    /// <summary>Only on Event nodes: when, where, who with.</summary>
+    public EventInfo? Event { get; set; }
 
     /// <summary>Null means the program's default (newest first).</summary>
     public SortOrder? Sort { get; set; }
@@ -40,6 +55,22 @@ public sealed class TreeNode
     public static TreeNode Person(string name) => new() { Kind = NodeKind.Person, Name = name };
     public static TreeNode ForAccount(Account a, string? name = null) =>
         new() { Kind = NodeKind.Account, Name = name ?? a.Info.Name, Account = a };
+    public static TreeNode NewEvent(string name, DateTime? start = null) =>
+        new() { Kind = NodeKind.Event, Name = name, Event = new EventInfo { Start = start } };
+    public static TreeNode Thing(string name) => new() { Kind = NodeKind.Thing, Name = name };
+
+    /// <summary>A detail's value by name (case does not matter), or null.</summary>
+    public string? Get(string detail) =>
+        Details.FirstOrDefault(d => string.Equals(d.Name, detail, StringComparison.OrdinalIgnoreCase))?.Value is { Length: > 0 } v ? v : null;
+
+    /// <summary>Sets a detail, adding it at the end if it is not there yet.</summary>
+    public Detail Set(string detail, string value, DetailKind kind = DetailKind.Text)
+    {
+        var d = Details.FirstOrDefault(x => string.Equals(x.Name, detail, StringComparison.OrdinalIgnoreCase));
+        if (d is null) Details.Add(d = new Detail { Name = detail, Kind = kind });
+        d.Value = value;
+        return d;
+    }
 
     /// <summary>This node and everything beneath it.</summary>
     public IEnumerable<TreeNode> SelfAndDescendants()

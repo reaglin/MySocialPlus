@@ -16,6 +16,19 @@ public static class TreeStore
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
+        // Empty lists (a topic's details, a person's log) are left out, so the file stays readable.
+        TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver
+        {
+            Modifiers =
+            {
+                info =>
+                {
+                    foreach (var p in info.Properties)
+                        if (typeof(System.Collections.ICollection).IsAssignableFrom(p.PropertyType) && p.Name != "children" && p.Name != "roots" && p.Name != "templates")
+                            p.ShouldSerialize = (_, v) => v is System.Collections.ICollection { Count: > 0 };
+                },
+            },
+        },
     };
 
     /// <summary>The tree in the file, or a new one with the two roots when there is no file.</summary>

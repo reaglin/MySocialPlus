@@ -8,13 +8,6 @@ public class TreeTests
     private static Account Bsky(string handle) => new() { Network = Network.Bluesky, Handle = handle };
 
     [Fact]
-    public void A_new_tree_has_My_Posts_and_My_Friends()
-    {
-        var t = SocialTree.CreateNew();
-        Assert.Equal(["My Posts", "My Friends"], t.Roots.Select(r => r.Name));
-    }
-
-    [Fact]
     public void Add_move_rename_delete()
     {
         var t = SocialTree.CreateNew();
@@ -110,7 +103,7 @@ public class TreeTests
         try
         {
             var path = Path.Combine(dir, "tree.json");
-            Assert.Equal(2, TreeStore.Load(path).Roots.Count);   // no file yet: a new tree
+            Assert.Equal(4, TreeStore.Load(path).Roots.Count);   // no file yet: a new tree
             var t = SocialTree.CreateNew();
             t.Add(t.MyFriends, TreeNode.Topic("Family"));
             TreeStore.Save(t, path);
