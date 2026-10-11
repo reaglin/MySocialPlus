@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MySocialPlus.App/MySocialPlus.App.csproj" />
+    <Project Path="src/MySocialPlus.Core/MySocialPlus.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MySocialPlus.Tests/MySocialPlus.Tests.csproj" />
+  </Folder>
+</Solution>

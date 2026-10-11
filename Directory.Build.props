@@ -1,0 +1,29 @@
+<Project>
+
+  <!-- Shared settings for MySocialPlus (src/, tests/). -->
+
+  <PropertyGroup>
+    <MySocialPlusVersion>0.1.0</MySocialPlusVersion>
+    <Version>$(MySocialPlusVersion)</Version>
+    <AssemblyVersion>$(MySocialPlusVersion).0</AssemblyVersion>
+    <FileVersion>$(MySocialPlusVersion).0</FileVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Company>Ron Eaglin</Company>
+    <Product>MySocial+</Product>
+    <Copyright>Copyright © Ron Eaglin</Copyright>
+    <RepositoryUrl>https://github.com/reaglin/MySocialPlus</RepositoryUrl>
+  </PropertyGroup>
+
+</Project>

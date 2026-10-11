@@ -1,0 +1,93 @@
+{
+  "notifications": [
+    {
+      "uri": "at://did:plc:sarahfixture/app.bsky.feed.post/3reply1",
+      "cid": "bafyreply1",
+      "author": { "did": "did:plc:sarahfixture", "handle": "sarahlee.bsky.social", "displayName": "Sarah Lee", "avatar": "https://cdn.bsky.app/img/avatar/plain/did:plc:sarahfixture/a@jpeg" },
+      "reason": "reply",
+      "reasonSubject": "at://did:plc:ronfixture/app.bsky.feed.post/3ronpost1",
+      "record": {
+        "$type": "app.bsky.feed.post",
+        "text": "Love this — when is the next class?",
+        "createdAt": "2026-10-11T15:02:00.000Z",
+        "reply": {
+          "root": { "uri": "at://did:plc:ronfixture/app.bsky.feed.post/3ronpost1", "cid": "bafyron1" },
+          "parent": { "uri": "at://did:plc:ronfixture/app.bsky.feed.post/3ronpost1", "cid": "bafyron1" }
+        }
+      },
+      "isRead": false,
+      "indexedAt": "2026-10-11T15:02:01.000Z",
+      "labels": []
+    },
+    {
+      "uri": "at://did:plc:tomfixture/app.bsky.feed.like/3like1",
+      "cid": "bafylike1",
+      "author": { "did": "did:plc:tomfixture", "handle": "tomeaglin.bsky.social", "displayName": "Tom Eaglin" },
+      "reason": "like",
+      "reasonSubject": "at://did:plc:ronfixture/app.bsky.feed.post/3ronpost1",
+      "record": {
+        "$type": "app.bsky.feed.like",
+        "subject": { "uri": "at://did:plc:ronfixture/app.bsky.feed.post/3ronpost1", "cid": "bafyron1" },
+        "createdAt": "2026-10-11T14:40:00.000Z"
+      },
+      "isRead": false,
+      "indexedAt": "2026-10-11T14:40:02.000Z",
+      "labels": []
+    },
+    {
+      "uri": "at://did:plc:annfixture/app.bsky.feed.repost/3repost1",
+      "cid": "bafyrepost1",
+      "author": { "did": "did:plc:annfixture", "handle": "ann.example.com", "displayName": "" },
+      "reason": "repost",
+      "reasonSubject": "at://did:plc:ronfixture/app.bsky.feed.post/3ronpost2",
+      "record": {
+        "$type": "app.bsky.feed.repost",
+        "subject": { "uri": "at://did:plc:ronfixture/app.bsky.feed.post/3ronpost2", "cid": "bafyron2" },
+        "createdAt": "2026-10-11T13:00:00.000Z"
+      },
+      "isRead": true,
+      "indexedAt": "2026-10-11T13:00:01.000Z",
+      "labels": []
+    },
+    {
+      "uri": "at://did:plc:annfixture/app.bsky.graph.follow/3follow1",
+      "cid": "bafyfollow1",
+      "author": { "did": "did:plc:annfixture", "handle": "ann.example.com" },
+      "reason": "follow",
+      "record": {
+        "$type": "app.bsky.graph.follow",
+        "subject": "did:plc:ronfixture",
+        "createdAt": "2026-10-11T12:00:00.000Z"
+      },
+      "isRead": true,
+      "indexedAt": "2026-10-11T12:00:01.000Z",
+      "labels": []
+    },
+    {
+      "uri": "at://did:plc:sarahfixture/app.bsky.feed.post/3mention1",
+      "cid": "bafymention1",
+      "author": { "did": "did:plc:sarahfixture", "handle": "sarahlee.bsky.social", "displayName": "Sarah Lee" },
+      "reason": "mention",
+      "record": {
+        "$type": "app.bsky.feed.post",
+        "text": "@roneaglin.bsky.social you have to see this garden path",
+        "createdAt": "2026-10-11T11:00:00.000Z"
+      },
+      "isRead": true,
+      "indexedAt": "2026-10-11T11:00:01.000Z",
+      "labels": []
+    },
+    {
+      "uri": "at://did:plc:somebody/app.bsky.feed.like/3likeunknown",
+      "cid": "bafyx",
+      "author": { "did": "did:plc:somebody", "handle": "somebody.bsky.social" },
+      "reason": "starterpack-joined",
+      "record": { "$type": "app.bsky.graph.starterpack", "createdAt": "2026-10-11T10:00:00.000Z" },
+      "isRead": true,
+      "indexedAt": "2026-10-11T10:00:01.000Z",
+      "labels": []
+    }
+  ],
+  "cursor": "2026-10-11T10:00:01.000Z",
+  "seenAt": "2026-10-11T13:30:00.000Z"
+}
