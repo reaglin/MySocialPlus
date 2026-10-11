@@ -46,13 +46,13 @@ public partial class MainWindow : Window
         ShowNode(_current);
 
         _timer.Tick += async (_, _) => await SyncAsync(force: false);
+        _seenTimer.Tick += SeenTimer_Tick;
         Loaded += async (_, _) =>
         {
             Tree.Focus();
             if (_s.ReadsNetworks) { _timer.Start(); await SyncAsync(force: false); }
-            else SetStatus("Sample data: nothing is read from the networks. Close and start MySocial+ normally to use your own.");
         };
-        Closed += (_, _) => { _timer.Stop(); _s.Dispose(); };
+        Closed += (_, _) => { _timer.Stop(); _seenTimer.Stop(); _s.Dispose(); };
     }
 
     // ---- the tree ------------------------------------------------------------------------------
@@ -98,6 +98,7 @@ public partial class MainWindow : Window
     {
         if (e.NewValue is NodeVm v)
         {
+            if (!ReferenceEquals(_current, v)) _keepNewFor = null;
             _current = v;
             _showWelcome = false;
             ShowNode(v);
@@ -144,27 +145,54 @@ public partial class MainWindow : Window
         ThreadList.ItemsSource = threads;
         if (threads.Count > 0) ThreadList.ScrollIntoView(threads[0]);
         ThreadList.Visibility = threads.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        SortPanel.Visibility = threads.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
         EmptyText.Text = threads.Count > 0 ? "" : EmptyMessage(node, keys.Count);
 
-        // Opening a node marks what is in it as seen (rule 3); the list keeps showing what was new.
-        if (_s.Cache.MarkSeen(keys) > 0) RefreshBadges();
+        // Opening a node marks what is in it as seen (rule 3) — once Ron has stayed on it a moment, so
+        // moving through the tree with the arrow keys does not clear every badge on the way.
+        _seenTimer.Stop();
+        if (keys.Count > 0 && _keepNewFor != node.Id && _s.Cache.UnseenByAccount().Keys.Any(keys.Contains)) _seenTimer.Start();
     }
 
     private string? _shownNodeId;
+    private string? _keepNewFor;
     private readonly HashSet<string> _shownNew = new(StringComparer.Ordinal);
+    private readonly DispatcherTimer _seenTimer = new() { Interval = TimeSpan.FromSeconds(1.2) };
+
+    /// <summary>Ron has stayed on the node: mark it seen, and offer to take that back.</summary>
+    private void SeenTimer_Tick(object? sender, EventArgs e)
+    {
+        _seenTimer.Stop();
+        if (_current is null || _showWelcome || _current.Node.Id != _shownNodeId) return;
+        var marked = _s.Cache.MarkSeen(_current.Node.AccountKeys());
+        if (marked == 0) return;
+        RefreshBadges();
+        var node = _current;
+        var list = NoticesFor(node.Node);
+        list.Add(new Notice($"Marked {Plural(marked, "item")} here as seen.", "Mark as new again", () =>
+        {
+            _s.Cache.MarkUnseen(_shownNew.Select(k => { var bar = k.IndexOf('|', StringComparison.Ordinal); return (k[..bar], k[(bar + 1)..]); }));
+            _keepNewFor = node.Node.Id;   // until Ron opens it again
+            RefreshBadges();
+            Notices.ItemsSource = NoticesFor(node.Node);
+        }));
+        Notices.ItemsSource = list;
+    }
 
     /// <summary>What's new: every person and account with something new, nothing marked seen.</summary>
     private void ShowOverview()
     {
         _shownNodeId = null;
+        _seenTimer.Stop();
         var rows = AllVms().Where(v => v.Badge > 0 && (v.Node.Kind == NodeKind.Person || v.Node.Account is { IsMine: true })).ToList();
         ContentTitle.Text = "What's new";
         ContentSubtitle.Text = rows.Count > 0
             ? "Everything with something new since you last looked. Open one here or in the tree; opening it marks it seen."
             : "Nothing new since you last looked. Open anything in the tree to read it.";
         SortPanel.Visibility = Visibility.Collapsed;
-        Notices.ItemsSource = _s.ReadsNetworks ? null
-            : new[] { new Notice("This is sample data with made-up people. Nothing is read from the networks, and changes are not saved.") };
+        var notices = ProblemNotices(_s.Tree.Accounts().ToList());
+        if (!_s.ReadsNetworks) notices.Insert(0, new Notice(SampleText));
+        Notices.ItemsSource = notices;
         ThreadList.ItemsSource = null;
         ThreadList.Visibility = Visibility.Collapsed;
         OverviewList.ItemsSource = rows;
@@ -209,11 +237,45 @@ public partial class MainWindow : Window
         }
     }
 
+    private const string SampleText = "This is sample data with made-up people. Nothing is read from the networks, and changes are not saved.";
+
+    /// <summary>
+    /// What went wrong the last time, said once for many accounts: "could not reach Bluesky" for all of
+    /// them, or "sign in again" for Ron's own account, with the button that fixes it.
+    /// </summary>
+    private List<Notice> ProblemNotices(IReadOnlyCollection<Account> accounts)
+    {
+        var list = new List<Notice>();
+        foreach (var a in accounts.Where(a => a.IsMine && a.LastProblem == nameof(Core.Sources.SourceProblem.SignInNeeded)))
+        {
+            var text = _s.Secrets.Has(BlueskySource.SecretName(a.Handle))
+                ? $"Bluesky no longer accepts MySocial+'s app password for @{a.Handle}. It may have been removed in Bluesky. Make a new one and paste it in."
+                : $"Sign in to Bluesky so MySocial+ can read the replies and likes on your posts (@{a.Handle}).";
+            list.Add(new Notice(text, "Sign in again…", () => BlueskySignIn_Click(this, new RoutedEventArgs())));
+        }
+        var failing = accounts.Where(a => a.IsReadable && a.LastError is not null && a.LastProblem != nameof(Core.Sources.SourceProblem.SignInNeeded)).ToList();
+        if (failing.Count == 0) return list;
+        var next = failing.Select(a => _s.Sync.Schedule.NextFor(a.Key)).OfType<DateTimeOffset>().DefaultIfEmpty(DateTimeOffset.Now).Min();
+        var when = $"MySocial+ will try again at {next.ToLocalTime():t}.";
+        var readable = accounts.Count(a => a.IsReadable);
+        var words = failing.Count == readable && failing.Count > 1
+            ? $"None of your accounts could be read the last time: {failing[0].LastError} {when}"
+            : failing.Count == 1
+                ? $"{Name(failing[0])} could not be read the last time: {failing[0].LastError} {when}"
+                : $"{failing.Count} accounts could not be read the last time ({string.Join(", ", failing.Take(3).Select(Name))}{(failing.Count > 3 ? ", …" : "")}): {failing[0].LastError} {when}";
+        list.Add(new Notice(words, "Try now", () => CheckNow_Click(this, new RoutedEventArgs())));
+        return list;
+
+        string Name(Account a) =>
+            _s.Tree.AllNodes().FirstOrDefault(n => ReferenceEquals(n.Account, a)) is { } n && SocialTree.PersonOf(n) is { } p
+                ? $"{p.Name} ({a.Info.Name})" : $"Your {a.Info.Name} account";
+    }
+
     private List<Notice> NoticesFor(TreeNode node)
     {
         var list = new List<Notice>();
-        if (!_s.ReadsNetworks)
-            list.Add(new Notice("This is sample data with made-up people. Nothing is read from the networks, and changes are not saved."));
+        if (!_s.ReadsNetworks) list.Add(new Notice(SampleText));
+        list.AddRange(ProblemNotices(node.SelfAndDescendants().Where(n => n.Account is not null).Select(n => n.Account!).ToList()));
 
         // Only for a person or an account: on a topic, a line per Facebook friend would bury the posts.
         if (node.Kind is NodeKind.Person or NodeKind.Account || node.Id == SocialTree.MyPostsId)
@@ -231,13 +293,7 @@ public partial class MainWindow : Window
                         ? $"Your {a.Info.Name} account: reading your own {a.Info.Name} posts is not built yet, so it has no number."
                         : $"{who} is {also}on {a.Info.Name}. {a.Info.WhyNot}";
                     list.Add(url is null ? new Notice(text)
-                        : new Notice(text, a.IsMine ? $"Open {a.Info.Name}" : "Open profile", () => OpenProfile(a.Info.Name + " — " + (a.IsMine ? "you" : who), url)));
-                }
-                else if (a.LastError is { } err)
-                {
-                    var signIn = a.IsMine && a.Network == Network.Bluesky && !_s.Secrets.Has(BlueskySource.SecretName(a.Handle));
-                    list.Add(signIn ? new Notice(err, "Sign in…", () => BlueskySignIn_Click(this, new RoutedEventArgs()))
-                                    : new Notice($"{a.Info.Name} (@{a.Handle}): {err}", "Try again", () => CheckNow_Click(this, new RoutedEventArgs())));
+                        : new Notice(text, $"Open {a.Info.Name} profile", () => OpenProfile(a.Info.Name + " — " + (a.IsMine ? "you" : who), url)));
                 }
             }
         }
@@ -252,6 +308,8 @@ public partial class MainWindow : Window
             return "No one here yet. Use Accounts ▸ Choose people I follow on Bluesky…, or Add person below the tree.";
         if (node.Kind == NodeKind.Topic && !node.Children.Any())
             return "This topic is empty. Select it and press Add person below the tree, or drag people onto it.";
+        if (node.Kind == NodeKind.Person && !node.Children.Any(c => c.Account is not null))
+            return $"{node.Name} has no accounts yet. Right-click them in the tree ▸ Add an account to this person….";
         if (readable == 0 && node.Kind is NodeKind.Person or NodeKind.Account)
             return "MySocial+ cannot read any of these accounts, so there is nothing to list. Use the button above to open the profile.";
         if (readable == 0)
@@ -329,7 +387,7 @@ public partial class MainWindow : Window
                 var n => $"Checked {Plural(report.AccountsChecked, "account")} at {now:t}: {n} new.",
             };
             if (report.Problems.Count > 0)
-                msg += $" {Plural(report.Problems.Count, "account")} could not be read — open it (marked ⚠ in the tree) to see why.";
+                msg += $" {Plural(report.Problems.Count, "account")} could not be read — What's new says why.";
             SetStatus(msg);
 
             // New things arrived in the node Ron is looking at: offer them rather than jumping the list.
@@ -482,12 +540,13 @@ public partial class MainWindow : Window
             NodeKind.Person => $"{n.Name}",
             _ => $"the {n.Account!.Info.Name} account {n.Account.Handle}",
         };
+        var mine = n.SelfAndDescendants().Where(x => x.Account is { IsMine: true, Network: Network.Bluesky }).Select(x => x.Account!).ToList();
         var ok = MessageBox.Show(this,
-            $"Remove {what} from MySocial+?\n\nThis only changes your tree here. Nothing is unfollowed or changed on any network.",
+            $"Remove {what} from MySocial+?\n\nThis only changes your tree here. Nothing is unfollowed or changed on any network." +
+            (mine.Count > 0 ? "\n\nMySocial+ will also forget the saved Bluesky app password." : ""),
             "Delete", MessageBoxButton.OKCancel, MessageBoxImage.Question, MessageBoxResult.Cancel);
         if (ok != MessageBoxResult.OK) return;
         var keys = n.SelfAndDescendants().Where(x => x.Account is not null).Select(x => x.Account!.Key).ToList();
-        var mine = n.SelfAndDescendants().Where(x => x.Account is { IsMine: true, Network: Network.Bluesky }).Select(x => x.Account!).ToList();
         Apply(() =>
         {
             _s.Tree.Delete(n);
@@ -612,12 +671,17 @@ public partial class MainWindow : Window
         }
         var dlg = new BlueskySignInWindow(_s) { Owner = this };
         dlg.ShowDialog();
-        if (!dlg.Changed) return;
-        SaveTree();
-        RebuildTree(dlg.AccountNodeId ?? SocialTree.MyPostsId);
-        _showWelcome = false;
-        ShowNode(_current);
-        _ = SyncAsync(force: true);
+        if (dlg.Changed)
+        {
+            SaveTree();
+            // Getting started stays up until people are in the tree: step 2 is next.
+            var hasFriends = _s.Tree.MyFriends.SelfAndDescendants().Any(n => n.Account is not null);
+            RebuildTree(hasFriends ? dlg.AccountNodeId ?? SocialTree.MyPostsId : null);
+            _showWelcome = !hasFriends;
+            ShowNode(_current);
+            _ = SyncAsync(force: true);
+        }
+        if (dlg.WantsImport) ImportFollows_Click(sender, e);
     }
 
     private void ImportFollows_Click(object sender, RoutedEventArgs e)
@@ -632,7 +696,12 @@ public partial class MainWindow : Window
             return;
         }
         var dlg = new ImportFollowsWindow(_s, mine, TargetTopic()) { Owner = this };
-        if (dlg.ShowDialog() != true) return;
+        if (dlg.ShowDialog() != true)
+        {
+            // Topics made in the window stay, even when no one was added: show and save them.
+            if (dlg.TopicsMade > 0) { SaveTree(); RebuildTree(_current?.Node.Id); ShowNode(_current); }
+            return;
+        }
         SaveTree();
         RebuildTree(dlg.TopicId);
         _showWelcome = false;

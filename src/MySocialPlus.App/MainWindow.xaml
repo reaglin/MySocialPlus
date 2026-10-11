@@ -30,9 +30,8 @@
                         <WrapPanel>
                             <TextBlock Text="{Binding ActivityLine}" FontWeight="SemiBold" />
                             <TextBlock Text="{Binding TimeText}" ToolTip="{Binding FullTime}" Foreground="{StaticResource Muted}" Margin="8,0,0,0" />
-                            <Button Style="{StaticResource LinkButton}" Content="Reply on the network" Tag="{Binding Link}" Click="OpenLink_Click"
-                                    Margin="12,0,0,0" FontSize="12" Visibility="{Binding Link, Converter={StaticResource ShowIfAny}}"
-                                    ToolTip="Opens the reply in your web browser, where you can answer it. MySocial+ never posts for you." />
+                            <Button Style="{StaticResource LinkButton}" Content="{Binding ReplyText}" Tag="{Binding Link}" Click="OpenLink_Click"
+                                    Margin="12,0,0,0" FontSize="12" Visibility="{Binding Link, Converter={StaticResource ShowIfAny}}" ToolTip="{Binding ReplyTip}" />
                         </WrapPanel>
                         <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Margin="0,2,0,0" />
                     </StackPanel>
@@ -183,7 +182,7 @@
                 <Button DockPanel.Dock="Top" Content="What's new" Click="WhatsNew_Click" HorizontalAlignment="Left" Margin="12,10,12,0"
                         ToolTip="Everything with something new, without marking any of it seen." />
                 <TextBlock DockPanel.Dock="Top" Style="{StaticResource Hint}" Margin="12,8,12,6"
-                           Text="A number means something new since you last opened that node. Opening it marks it seen." />
+                           Text="A number means something new since you last opened that node. Staying on a person or topic for a moment marks everything inside it as seen." />
                 <WrapPanel DockPanel.Dock="Bottom" Margin="8">
                     <Button Content="New topic" Click="NewTopic_Click" Margin="0,0,6,6" ToolTip="Make a topic under My Friends, like Family or Colleagues." />
                     <Button Content="Add person" Click="AddPerson_Click" Margin="0,0,6,6" ToolTip="Add someone to the selected topic, with their account on a network." />
@@ -212,7 +211,7 @@
                             <Setter Property="Padding" Value="2,3" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsProfileOnly}" Value="True">
-                                    <Setter Property="Opacity" Value="0.72" />
+                                    <Setter Property="Opacity" Value="0.85" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>

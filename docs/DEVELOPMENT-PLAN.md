@@ -1,6 +1,6 @@
 # MySocial+ — development plan
 
-Numbered tasks per phase, each with what "done" means. **Started 2026-10-11** (plan only).
+Numbered tasks per phase, each with what "done" means. **Started 2026-10-11; phases 0–3 built the same day** (Bluesky, on the sample and against the real public API) — Ron's hand-tests 1–5 in `docs/MANUAL-TESTING.md` are next.
 Personal use; Ron's networks are **Bluesky and Facebook** (2026-10-11). The phases prove the
 tree-and-badges idea on Bluesky, the easy one, before Facebook, the hard one.
 
@@ -18,44 +18,46 @@ Claude never marks ✅ on its own.
 
 ---
 
-## Phase 0 — the repository ⬜
+## Phase 0 — the repository
 
 | # | Task | Done when |
 |---|---|---|
-| 0.1 | `git init`, GitHub repo `reaglin/MySocialPlus` (private), `.gitignore` (bin, obj, manual-test) | First commit pushed |
-| 0.2 | `MySocialPlus.slnx`, `Directory.Build.props` (`MySocialPlusVersion`, nullable, TreatWarningsAsErrors) | `dotnet build` clean |
-| 0.3 | `MySocialPlus.Core` (net10.0), `MySocialPlus.App` (net10.0-windows, WPF), xUnit tests | `dotnet test` green |
-| 0.4 | AI Manager packages built on this machine (`..\AiManager\build\pack.ps1`) and `Eaglin.AiManager` + `.Wpf` 1.6.0 referenced | The app builds against the feed |
+| 0.1 | ⚠️ `git init`, GitHub repo `reaglin/MySocialPlus` (private), `.gitignore` (bin, obj, manual-test, shots) | First commit pushed — done 2026-10-11; Ron to confirm the repo |
+| 0.2 | ⚠️ `MySocialPlus.slnx`, `Directory.Build.props` (`MySocialPlusVersion` 0.1.0, nullable, TreatWarningsAsErrors) | `dotnet build` clean — built 2026-10-11 |
+| 0.3 | ⚠️ `MySocialPlus.Core` (net10.0), `MySocialPlus.App` (net10.0-windows, WPF), xUnit tests | `dotnet test` green — 33 tests, plus 1 live test run with `MSP_LIVE=1` |
+| 0.4 | ⚠️ `Eaglin.AiManager` + `.Wpf` **1.6.0** referenced from `C:\nuget-local` | The app builds against the feed — built 2026-10-11 |
 
-## Phase 1 — the model and the store ⬜
-
-| # | Task | Done when |
-|---|---|---|
-| 1.1 | Tree model: topics, people, accounts, posts; the two roots My Posts and My Friends | Tests cover add / move / rename / delete |
-| 1.2 | `tree.json` read and write; unknown fields kept | Round-trip test |
-| 1.3 | Item cache (SQLite): items keyed by network + id, newest-first queries per node | Tests with fixture items |
-| 1.4 | Seen state and badge roll-up | A test: three new items under a person show 3 on the person, the topic and the root; opening the person clears all three |
-| 1.5 | Sample data (`--write-sample`) so the window can be built before any network is connected | The sample opens with badges |
-
-## Phase 2 — the window ⬜
+## Phase 1 — the model and the store
 
 | # | Task | Done when |
 |---|---|---|
-| 2.1 | MainWindow: tree left, content right, splitter; badges on nodes | Driven through UI Automation on the sample |
-| 2.2 | Content pane: merged time-ordered list for a topic/person; a post with its comments | Shows network, author (or "name hidden by Facebook"), time, text, picture, link out |
-| 2.3 | Manage the tree: new topic, add person, add an account to a person, drag a person between topics | Hand-test |
-| 2.4 | Newest-first / oldest-unread-first toggle | Remembered per node |
-| 2.5 | A first-run screen that says what the program is and what to do first (connect a network) | UX review |
-| 2.6 | UX: cognitive walkthrough + heuristic evaluation (`ux-reviewer`) | Findings fixed or recorded |
+| 1.1 | ⚠️ Tree model (`SocialTree`, `TreeNode`, `Account`): the two roots, topics, people, accounts; the rules (people under My Friends, accounts in people or under My Posts, one node per account). Posts are not tree nodes — they are cache items listed in the content pane | `TreeTests`: add / move / rename / delete and the rules |
+| 1.2 | ⚠️ `tree.json` read and write, written through a temp file; unknown fields kept | Round-trip test |
+| 1.3 | ⚠️ Item cache (SQLite `items.db`): items keyed by **account + id** (the same post can be Ron's comment and a friend's post), newest-first queries | `CacheAndBadgeTests` |
+| 1.4 | ⚠️ Seen state per item and badge roll-up; an account's first read arrives as seen, so connecting does not light up old posts | Plan's test, word for word, passes; opening the person clears all three |
+| 1.5 | ⚠️ Sample data: `--sample` (opens a fresh sample in %TEMP%, reads nothing, saves nothing) and `--write-sample <folder>` | The sample opens with badges (`SyncTests`, and the window) |
 
-## Phase 3 — Bluesky (the first real network) ⬜
+## Phase 2 — the window
 
 | # | Task | Done when |
 |---|---|---|
-| 3.1 | Sign in with a Bluesky **app password** (DPAPI, `%LOCALAPPDATA%`) | Token window: paste, check, save, remove |
-| 3.2 | My Posts ← Ron's posts, with replies, likes and reposts as activity | Fixture tests + a real run |
-| 3.3 | My Friends ← import the people Ron follows (he picks which, and into which topics) | Hand-test |
-| 3.4 | Poller: interval while the app is open, back-off on rate limit, "last checked" shown | Tests with a fake clock |
+| 2.1 | ⚠️ MainWindow: tree left, content right, splitter; badges on nodes, summed up the tree; total in the title bar | Driven through UI Automation on the sample (`tools/tour-window.ps1`) — Ron's hand-test 1 |
+| 2.2 | ⚠️ Content pane: a post with its replies, likes, reposts under it (oldest first, like a conversation); follows and mentions on their own; new ones shaded with "3 new" and dots; picture, link card or quote, counts, **Open on Bluesky**, **Reply on Bluesky** | Hand-test 1 |
+| 2.3 | ⚠️ Manage the tree: New topic, Add person (with a first account), Add an account to a person, Rename (F2), Delete (Del), drag a person or topic onto a topic, right-click ▸ Move to | Hand-test 1 |
+| 2.4 | ⚠️ Newest-first / oldest-unread-first, remembered per node (in tree.json) | Hand-test 1 |
+| 2.5 | ⚠️ First run: **Welcome to MySocial+** with three steps (connect Bluesky, bring in people, make topics) and what Facebook allows; stays up until people are added; Help ▸ Getting started brings it back | UX review — Ron's hand-test 2 |
+| 2.6 | ⚠️ **What's new** (added 2026-10-11, from the first look at the window): the window opens on a list of everything with something new and marks nothing seen. Opening a node marks it seen only after a moment on it, so arrow keys through the tree clear nothing; **Mark as new again** undoes it | Hand-test 1 |
+| 2.7 | ⚠️ UX: cognitive walkthrough + heuristic evaluation (2026-10-11; run as a general-purpose agent with the ux-reviewer brief — no `ux-reviewer` agent in this session) | **16 findings, 13 fixed:** sign-in-again for a rejected app password; problems shown on What's new and every page with Try now / Sign in again; ⚠ on the person, not just the hidden account; seen only after a pause + Mark as new again; Getting started stays until people are added and sign-in leads to step 2 (Done is the default after success); topics made in the import window are saved even on Cancel; right words for a person with no accounts; Reply on Bluesky with its tooltip; Mastodon needs a full address; Delete says it forgets the app password; "Open Facebook profile"; Order hidden where there is nothing to order; profile-only nodes less faded. **Recorded, not done:** undo for a move (13) and a visible Move-to button (14) — right-click ▸ Move to and drag do it today; profile-only contrast (16) to be measured |
+| 2.8 | Undo a move ("Moved Sarah into Family. Undo") — UX finding 13 | Hand-test |
+
+## Phase 3 — Bluesky (the first real network)
+
+| # | Task | Done when |
+|---|---|---|
+| 3.1 | ⚠️ Sign in with a Bluesky **app password**, checked by signing in before it is saved (DPAPI, `%LOCALAPPDATA%\MySocialPlus`); the window explains how to make one, shows the saved one masked, and removes it | Ron's hand-test 2 |
+| 3.2 | ⚠️ My Posts ← Ron's posts (`getAuthorFeed`) + notifications (replies, likes, reposts, quotes, mentions, follows); posts the activity is about are fetched if older; the session refreshes itself, and signs in again from the app password | Fixture tests (saved real answers + a lexicon-shaped notifications file) — **real run with Ron's account is hand-test 4** |
+| 3.3 | ⚠️ My Friends ← Ron ticks people from everyone he follows (all pages), finds by name, picks or makes the topic. Friends are read from the public API, no sign-in needed | Live test (`MSP_LIVE=1`) reads a real account and pages a 700-follow list; hand-test 3 |
+| 3.4 | ⚠️ Poller: every 15 minutes while open (open question 4), back-off doubling to 2 h on a failure or "slow down", never sooner than Bluesky asks; Check now / F5; next check and last checked shown | `PollScheduleTests` (times given, no clock); hand-test 5 |
 
 ## Phase 4 — Facebook (Ron's own posts) ⬜
 
@@ -83,16 +85,16 @@ Ron's second network (2026-10-11). Personal use, so the Meta app stays in Develo
 
 | # | Task | Done when |
 |---|---|---|
-| 6.1 | AI Settings from `Eaglin.AiManager.Wpf`; calls tagged `MySocialPlus` | Opens, uses Ron's keys |
+| 6.1 | ⚠️ AI Settings from `Eaglin.AiManager.Wpf` (Tools ▸ AI Settings…, opened for the app `MySocialPlus`); nothing calls the AI yet | Opens, uses Ron's keys — Ron to look |
 | 6.2 | The asks Ron chooses (open question 6) | Each one proposes; nothing posts |
 
 ## Phase 7 — the finish ⬜
 
 | # | Task | Done when |
 |---|---|---|
-| 7.1 | About: "Created by Dr. Ron Eaglin" card + softwareplus.ai link | Ron looks |
+| 7.1 | ⚠️ About: "Created by Dr. Ron Eaglin" card + softwareplus.ai link (to the home page: MySocial+ has no page there, being personal) — built 2026-10-11 | Ron looks |
 | 7.2 | Icon with the "+" | Ron looks |
-| 7.3 | `docs/MANUAL-TESTING.md` and a `manual-test\` build | Ron hand-tests |
+| 7.3 | ⚠️ `docs/MANUAL-TESTING.md` (tests 1–5) and the `manual-test\` build — built 2026-10-11 | Ron hand-tests |
 | 7.4 | ~~Store package~~ ❌ not doing — personal use (Ron, 2026-10-11) | — |
 
 ---
@@ -106,7 +108,7 @@ Ron's second network (2026-10-11). Personal use, so the Meta app stays in Develo
 3. **Facebook: personal profile, a Page, or both?** (Personal profile assumed from 2026-10-11; a Page
    is task 4.5 if wanted.) Instagram is not in use, so it waits in phase 5.
 4. **How often should it check?** Proposed: every 15 minutes while the program is open; no background
-   service at first.
+   service at first. (Built that way 2026-10-11 — say if it should change.)
 5. ~~**The name.**~~ **Settled by question 2:** "MySocial+" stands; nothing to reserve, since it is not going to the Store.
 6. **What should the AI do?** Proposed in `docs/PLAN.md`: catch-up summaries, sort friends into
    topics, draft replies (Ron sends), search the cache. Which, and anything else?
@@ -118,6 +120,8 @@ Ron's second network (2026-10-11). Personal use, so the Meta app stays in Develo
 | Document | What it is for |
 |---|---|
 | `docs/PLAN.md` | What each network allows, the decisions, the architecture |
+| `docs/MANUAL-TESTING.md` | Ron's hand-tests, and the command that builds `manual-test\MySocialPlus.exe` |
+| `tools/tour-window.ps1` | Opens the sample, clicks through the tree with UI Automation and photographs each view |
 | `CLAUDE.md` | Rules for working in this repo |
 | `..\CLAUDE.md` | Portfolio rules (marks, development cycle, About card, "+" names) |
 | `..\AiManager\CLAUDE.md` | How to consume the AI layer |

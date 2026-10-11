@@ -20,10 +20,14 @@ public sealed class BlueskySignInWindow : Window
     private readonly TextBlock _status;
     private readonly Button _save;
     private readonly Button _remove;
+    private readonly Button _close;
+    private readonly Button _next;
 
     /// <summary>True when an account was added or a sign-in saved or removed.</summary>
     public bool Changed { get; private set; }
     public string? AccountNodeId { get; private set; }
+    /// <summary>Ron pressed "Choose people I follow…" after signing in: step 2 opens next.</summary>
+    public bool WantsImport { get; private set; }
 
     public BlueskySignInWindow(AppSession session)
     {
@@ -43,6 +47,9 @@ public sealed class BlueskySignInWindow : Window
         _status = Ui.Text("", top: 10);
         _save = Ui.Button("Check and save", async (_, _) => await SaveAsync(), primary: true, isDefault: true);
         _remove = Ui.Button("Remove sign-in", (_, _) => Remove());
+        _close = Ui.Button("Close", (_, _) => Close(), isCancel: true);
+        _next = Ui.Button("Choose people I follow…", (_, _) => { WantsImport = true; Close(); }, primary: true);
+        _next.Visibility = Visibility.Collapsed;
 
         Content = Ui.Stack(
             Ui.Text("MySocial+ reads your Bluesky notifications — who replied to, liked or shared your posts — with an app password. " +
@@ -58,7 +65,7 @@ public sealed class BlueskySignInWindow : Window
             _password,
             Ui.Text("It looks like abcd-efgh-ijkl-mnop. It is kept on this computer only, encrypted so only your Windows account can read it.", hint: true, top: 4),
             _status,
-            Ui.Buttons(_save, _remove, Ui.Button("Close", (_, _) => Close(), isCancel: true)));
+            Ui.Buttons(_next, _save, _remove, _close));
 
         if (existing is not null && _s.Secrets.Has(BlueskySource.SecretName(existing.Handle)))
             _status.Text = $"Signed in as @{existing.Handle} (app password {SecretStore.Mask(_s.Secrets.Load(BlueskySource.SecretName(existing.Handle)) ?? "")}). To change it, paste a new app password and press Check and save.";
@@ -106,8 +113,14 @@ public sealed class BlueskySignInWindow : Window
             _password.Clear();
             Changed = true;
             _remove.IsEnabled = true;
-            Say($"Signed in as @{who.Handle} and saved. Close this window; MySocial+ reads your posts now. " +
-                "Next: Accounts ▸ Choose people I follow on Bluesky….");
+            Say($"Signed in as @{who.Handle} and saved. MySocial+ reads your posts as soon as this window closes. " +
+                "Next, choose the people you follow that you want in MySocial+ — or press Done and do it later from the Accounts menu.");
+            // Done now, and Enter goes on to step 2 rather than re-checking an empty password box.
+            _save.IsDefault = false;
+            _close.Content = "Done";
+            _next.Visibility = Visibility.Visible;
+            _next.IsDefault = true;
+            _next.Focus();
         }
         catch (SourceException e)
         {

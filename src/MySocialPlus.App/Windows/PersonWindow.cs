@@ -98,6 +98,7 @@ public sealed class PersonWindow : Window
         {
             Network.Bluesky => "Like sarahlee.bsky.social — it is under their name on their Bluesky profile.",
             Network.Facebook => "The part after facebook.com/ in their profile address, like sarah.lee.123 — or paste the whole address.",
+            Network.Mastodon or Network.Rss => "Paste the full address of their profile, like https://mastodon.social/@name.",
             _ => "Their user name on " + info.Name + ", or paste the address of their profile page.",
         };
     }
@@ -126,6 +127,12 @@ public sealed class PersonWindow : Window
                     _error.Text = "A Bluesky handle has a dot in it, like sarahlee.bsky.social. Check it on their profile.";
                     return;
                 }
+            }
+            // Without a profile address pattern (Mastodon lives on many servers), only a full address can be opened.
+            if (Info.ProfileUrlFormat is null && !handle.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                _error.Text = "Paste the full address of their profile, like https://mastodon.social/@name.";
+                return;
             }
             account = new Account { Network = net, Handle = handle };
             if (_tree.Accounts().Any(a => a.Key == account.Key))

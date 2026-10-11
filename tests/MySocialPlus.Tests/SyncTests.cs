@@ -76,6 +76,7 @@ public class SyncTests
         source.Fail = new SourceException(SourceProblem.RateLimited, "Slow down.", TimeSpan.FromHours(1));
         var r = await sync.RunDueAsync(T0, default);
         Assert.Equal("Slow down.", sarah.LastError);
+        Assert.Equal("RateLimited", sarah.LastProblem);
         Assert.Single(r.Problems);
         Assert.Null(sarah.LastChecked);
         Assert.False(sync.Schedule.IsDue(sarah.Key, T0.AddMinutes(59)));

@@ -46,7 +46,11 @@ public sealed partial class NodeVm : ObservableObject
     /// <summary>An account MySocial+ cannot read: shown dimmer, never badged, and the tooltip says why.</summary>
     public bool IsProfileOnly => Node.Account is { IsReadable: false };
 
-    public bool HasProblem => Node.Account?.LastError is not null;
+    /// <summary>The account, or for a person any of their accounts, could not be read last time.</summary>
+    public bool HasProblem => Node.Kind is NodeKind.Account or NodeKind.Person &&
+                              Node.SelfAndDescendants().Any(n => n.Account is { IsReadable: true, LastError: not null });
+
+    private string? ProblemText => Node.SelfAndDescendants().Select(n => n.Account?.LastError).FirstOrDefault(e => e is not null);
 
     /// <summary>Segoe MDL2 Assets glyphs.</summary>
     public string Glyph => Node.Kind switch
@@ -54,9 +58,10 @@ public sealed partial class NodeVm : ObservableObject
         NodeKind.Root when Node.Id == SocialTree.MyPostsId => "",   // edit (what I wrote)
         NodeKind.Root => "",                                         // people
         NodeKind.Topic => "",                                        // folder
+        NodeKind.Person when HasProblem => "",                       // warning
         NodeKind.Person => "",                                       // contact
         _ when IsProfileOnly => "",                                  // link: opens their profile
-        _ when HasProblem => "",                                     // warning
+        _ when HasProblem => "",
         _ => "",                                                     // globe: a network account
     };
 
@@ -66,9 +71,9 @@ public sealed partial class NodeVm : ObservableObject
             "Your own accounts. Open one to see your posts and who replied, liked or shared them.",
         NodeKind.Root => "The people you follow, in topics you make. Drag a person onto a topic to move them.",
         NodeKind.Topic => "A topic you made. Its number is everything new from the people in it.",
+        _ when HasProblem => "Could not be read last time: " + ProblemText,
         NodeKind.Person => "Open to see everything they posted, on every network, newest first.",
         _ when IsProfileOnly => Node.Account!.Info.WhyNot,
-        _ when HasProblem => Node.Account!.LastError!,
         _ => "Open to see this account's posts.",
     };
 

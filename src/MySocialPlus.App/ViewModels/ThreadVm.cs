@@ -32,6 +32,8 @@ public sealed class ItemVm
     public string? Link => Item.Link;
     public bool IsNew => !Item.Seen;
     public string OpenText => $"Open on {NetworkInfo.For(Item.Network).Name}";
+    public string ReplyText => $"Reply on {NetworkInfo.For(Item.Network).Name}";
+    public string ReplyTip => $"Opens this on {NetworkInfo.For(Item.Network).Name} in your web browser. Write your answer there — MySocial+ never posts for you.";
 
     public string? Counts
     {

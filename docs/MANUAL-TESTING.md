@@ -1,0 +1,81 @@
+# MySocial+ — hand tests
+
+Each test says what to do and what should happen. Report anything that differs, or anything that
+was confusing, and it becomes a plan item.
+
+**The build to use:** `manual-test\MySocialPlus.exe` (rebuilt with the command below), or
+`dotnet run --project src/MySocialPlus.App`.
+
+```powershell
+dotnet publish src/MySocialPlus.App/MySocialPlus.App.csproj -c Release -r win-x64 `
+    --self-contained false -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o manual-test
+```
+
+**Your data** is in `Documents\MySocialPlus` (`tree.json`, your tree; `items.db`, the saved posts).
+The app password is in `%LOCALAPPDATA%\MySocialPlus`, encrypted. To start over, close the program and
+delete both folders.
+
+---
+
+## Phases 0–3 — the tree, the window, and Bluesky (2026-10-11)
+
+### Test 1 — look around the sample (no network)
+
+1. Open a PowerShell in the repo and run `manual-test\MySocialPlus.exe --sample`. The title says
+   **sample data**; nothing is read from the networks and nothing is saved.
+2. The window opens on **What's new**: six rows (My Posts ▸ Bluesky with 4, then five friends with 1
+   each). The tree shows the same numbers, summed up: Family 2, Colleagues 3, My Friends 5.
+3. Click **My Posts ▸ Bluesky**. Your post about the EGN3443 video is at the top, shaded orange with
+   **3 new**: Tom's like, Sarah's reply and Dana's repost have orange dots; Priya's older reply does not.
+   "Lena Fischer followed you" is its own card. After about a second the numbers in the tree go away and
+   a line says **Marked 4 items here as seen** with **Mark as new again**.
+4. Press **Mark as new again**: the 4 comes back on Bluesky and My Posts.
+5. Click **Sarah Lee**: her garden-path post is new; a yellow line says she is also on Facebook, with
+   **Open Facebook profile** (opens facebook.com inside the program — her sample handle is made up, so
+   Facebook will say the page does not exist).
+6. Click **Jim Halloran** (Facebook only): no posts, and the line says why there is no number.
+7. Use the arrow keys to move quickly down the tree through Colleagues and its people. The numbers
+   should **not** disappear while you pass through; they clear only where you stop for a moment.
+8. Drag **Ann Chu** onto **Family**. She moves. Right-click a person: **Move to**, **Rename…**,
+   **Delete**, **Add an account to this person…**.
+9. **Order: Oldest unread first** on My Friends puts the unread posts first, oldest at the top.
+
+### Test 2 — connect your Bluesky account
+
+1. Run `manual-test\MySocialPlus.exe` (no `--sample`). First time: **Welcome to MySocial+** with three
+   steps.
+2. Press **Connect Bluesky…**. Follow the window: make an app password in Bluesky (Settings ▸ Privacy
+   and security ▸ App passwords ▸ Add App Password, name it MySocial+, leave direct messages unticked),
+   type your handle, paste it, **Check and save**.
+3. It should say **Signed in as @…** and offer **Choose people I follow…** (and Done).
+4. Try a wrong app password once first: it should say Bluesky did not accept it and how to make a new one.
+
+### Test 3 — bring in people and sort them
+
+1. Press **Choose people I follow…** (or Accounts ▸ Choose people I follow on Bluesky…). Everyone you
+   follow is listed with their handle; **Find** narrows the list.
+2. **New topic…** → Family. Tick two people, **Add 2 people**. They appear under Family.
+3. Within a minute the status bar says **Checked N accounts**. Their posts appear when you open them —
+   **without** numbers: what was already there when you added someone is not "new". New posts after
+   this get a number.
+4. Add someone by hand: select a topic, **Add person**, type a name, Network Facebook, their profile
+   address. They appear with a link icon and no number; opening them says why.
+
+### Test 4 — your own posts
+
+1. Open **My Posts ▸ Bluesky**: your newest posts, with the replies, likes and reposts on them. Your
+   own posts are never counted as new.
+2. Ask someone to reply to one of your posts (or reply from another account). Within 15 minutes —
+   or press **Check now** (F5) — My Posts gets a number. Open it: the reply is under the post, with
+   **Reply on Bluesky**, which opens it in your browser. MySocial+ never posts for you.
+
+### Test 5 — when things go wrong
+
+1. Unplug the network (or turn off Wi-Fi) and press **Check now**. What's new and every page should
+   say the accounts could not be read, when it will try again, and offer **Try now**. People whose
+   accounts failed show a ⚠ in the tree.
+2. In Bluesky, delete the MySocial+ app password, then **Check now**: a line says Bluesky no longer
+   accepts the app password, with **Sign in again…**.
+
+**Tell Claude:** anything that confused you, anything that should be worded differently, and whether
+15 minutes between checks is right (open question 4).

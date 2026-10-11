@@ -93,6 +93,9 @@ public sealed class Account
     /// <summary>What went wrong the last time it was read, in words for Ron; null when it worked.</summary>
     public string? LastError { get; set; }
 
+    /// <summary>What kind of problem LastError is (Sources.SourceProblem by name), so the window can offer the right fix.</summary>
+    public string? LastProblem { get; set; }
+
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? Extra { get; set; }
 

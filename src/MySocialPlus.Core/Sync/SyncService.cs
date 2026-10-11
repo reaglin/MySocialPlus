@@ -67,6 +67,7 @@ public sealed class SyncService
             if (r.Error is { } e)
             {
                 a.LastError = e.Message;
+                a.LastProblem = e.Problem.ToString();
                 Schedule.Failed(a.Key, now, e.RetryAfter);
                 problems.Add((a, e.Message));
                 continue;
@@ -83,6 +84,7 @@ public sealed class SyncService
             added += _cache.Upsert(r.Items, asSeen: firstRead);
             a.LastChecked = now;
             a.LastError = null;
+            a.LastProblem = null;
             Schedule.Succeeded(a.Key, now);
         }
         return new SyncReport(results.Length, added, problems);

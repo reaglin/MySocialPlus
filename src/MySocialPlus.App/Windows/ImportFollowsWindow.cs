@@ -24,6 +24,8 @@ public sealed class ImportFollowsWindow : Window
 
     public int Added { get; private set; }
     public string? TopicId { get; private set; }
+    /// <summary>Topics made with New topic… — they stay in the tree even if the window is cancelled.</summary>
+    public int TopicsMade { get; private set; }
 
     public ImportFollowsWindow(AppSession session, Account mine, TreeNode suggestedTopic)
     {
@@ -63,6 +65,7 @@ public sealed class ImportFollowsWindow : Window
             if (name is null) return;
             var t = TreeNode.Topic(name);
             _s.Tree.Add(_s.Tree.MyFriends, t);
+            TopicsMade++;
             FillTopics(t);
         });
         DockPanel.SetDock(newTopic, Dock.Right);

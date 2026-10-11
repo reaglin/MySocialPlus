@@ -146,6 +146,26 @@ public sealed class ItemCache : IDisposable
         return cmd.ExecuteNonQuery();
     }
 
+    /// <summary>"Mark as new again": undoes opening a node, for exactly the items that were new then.</summary>
+    public int MarkUnseen(IEnumerable<(string AccountKey, string Id)> items)
+    {
+        using var tx = _db.BeginTransaction();
+        using var cmd = _db.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "UPDATE items SET seen = 0 WHERE account_key = $k AND id = $id";
+        var k = cmd.Parameters.Add(new SqliteParameter { ParameterName = "$k" });
+        var id = cmd.Parameters.Add(new SqliteParameter { ParameterName = "$id" });
+        var n = 0;
+        foreach (var (accountKey, itemId) in items)
+        {
+            k.Value = accountKey;
+            id.Value = itemId;
+            n += cmd.ExecuteNonQuery();
+        }
+        tx.Commit();
+        return n;
+    }
+
     /// <summary>Removes an account's items (the account was deleted from the tree).</summary>
     public int Forget(string accountKey)
     {

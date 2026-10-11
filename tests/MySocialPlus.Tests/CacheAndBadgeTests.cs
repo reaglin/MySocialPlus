@@ -57,6 +57,17 @@ public class CacheAndBadgeTests
     }
 
     [Fact]
+    public void Mark_as_new_again_restores_exactly_what_was_new()
+    {
+        using var cache = new ItemCache(":memory:");
+        cache.Upsert([Post("k", "1", 2, seen: true), Post("k", "2", 1), Post("k", "3", 0.5)]);
+        cache.MarkSeen(["k"]);
+        Assert.Equal(2, cache.MarkUnseen([("k", "2"), ("k", "3")]));
+        Assert.Equal(2, cache.UnseenByAccount()["k"]);
+        Assert.True(cache.ForAccounts(["k"]).Single(i => i.Id == "1").Seen);
+    }
+
+    [Fact]
     public void Same_id_under_two_accounts_is_two_rows()
     {
         using var cache = new ItemCache(":memory:");

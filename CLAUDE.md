@@ -14,8 +14,16 @@ WPF on .NET 10; AI through the shared `Eaglin.AiManager`.
 **For Ron's personal use — not a Store program** (2026-10-11). His networks: **Bluesky and
 Facebook**, mostly.
 
-**Status: plan stage, 2026-10-11** — no code yet. `docs/PLAN.md` has the decisions and what each
-network allows; `docs/DEVELOPMENT-PLAN.md` has the phases and the open questions for Ron.
+**Status: phases 0–3 built 2026-10-11** — the tree, the cache and badges, the window (What's new,
+content pane, dialogs), and Bluesky (app-password sign-in, Ron's notifications, friends from the
+public API, choosing people he follows). 33 tests green, plus a live Bluesky test (`MSP_LIVE=1`).
+⚠️ Ron's hand-tests 1–5 (`docs/MANUAL-TESTING.md`) are next; Facebook (phase 4) starts with his
+Graph API Explorer check (task 4.1). `docs/PLAN.md` has the decisions and what each network allows.
+
+**Checking the window:** `.\tools\tour-window.ps1 -Exe src\MySocialPlus.App\bin\Debug\net10.0-windows\MySocialPlus.exe`
+opens the sample (`--sample`: made-up people, nothing read, nothing saved), selects tree nodes through
+UI Automation and photographs each view into `shots\` (gitignored). Opening a node marks it seen only
+after ~1.2 s on it, so wait longer than that before photographing.
 
 ### Read these first
 
@@ -56,22 +64,30 @@ network allows; `docs/DEVELOPMENT-PLAN.md` has the phases and the open questions
    secrets where they do not).
 7. **The program is MySocial+ in front of a person, `MySocialPlus` in the code.**
 
-## Planned layout
+## Layout
 
 ```
 MySocialPlus.slnx
-├── src/MySocialPlus.Core/   net10.0, no UI, no Windows API
-│   Model/     TreeNode (topic | person | account | post), Person, Account, Item (post or comment),
-│              Activity, SeenState
-│   Sources/   ISource (fetch since a cursor → items), one folder per network:
-│              Bluesky/, Mastodon/, Rss/ (also YouTube channels), Reddit/, Meta/ (Facebook + Instagram)
-│   Sync/      Poller (per-source interval, back-off on rate limits), Badges (unread roll-up)
-│   Store/     the tree file (JSON) + the item cache (SQLite)
-│   Ai/        prompts and a defensive reader for what the AI returns
-├── src/MySocialPlus.App/    net10.0-windows, WPF: MainWindow (tree | content), account windows,
-│                            AI Settings via Eaglin.AiManager.Wpf, About
-└── tests/MySocialPlus.Tests/  xUnit; saved API answers in tests/fixtures (no network in tests)
+├── src/MySocialPlus.Core/   net10.0, no UI (DPAPI only through ProtectedData, guarded)
+│   Model/     SocialTree (the roots and the rules), TreeNode (root | topic | person | account), Account,
+│              Item (post | comment | reaction | repost | mention | follow), Network + NetworkInfo
+│              (what each network lets the app read, and why not, in words for Ron)
+│   Content/   Threads: a post with its activity, time order only
+│   Sources/   ISource + SourceException (a problem kind + a message for Ron); Bluesky/ (client,
+│              mapper, source). Later: Meta/, Mastodon/, Rss/, Reddit/
+│   Sync/      SyncService (reads what is due, files it), PollSchedule (interval + back-off), Badges
+│   Store/     TreeStore (tree.json), ItemCache (items.db, SQLite, keyed by account + id), DataPaths
+│   Secrets/   SecretStore (DPAPI, one file per secret)
+│   Sample/    SampleData (--sample)
+├── src/MySocialPlus.App/    net10.0-windows, WPF: MainWindow (tree | What's new / content | welcome),
+│                            Windows/ (dialogs built in code), ViewModels/, AI Settings, About
+├── tests/MySocialPlus.Tests/  xUnit; saved API answers in tests/fixtures (no network in tests,
+│                              except LiveBlueskyTests with MSP_LIVE=1)
+└── tools/tour-window.ps1    photographs the window on the sample
 ```
+
+**"Seen" and "new":** every cached item has a seen flag. An account's first read is filed as seen
+(connecting is not news); Ron's own posts are always seen; Bluesky's own read flag is ignored.
 
 ## Conventions
 

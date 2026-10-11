@@ -81,7 +81,7 @@ public static class SampleData
             items.Add(new Item
             {
                 AccountKey = post.AccountKey, Network = post.Network, Id = $"{post.Id}/activity{n++}",
-                Kind = kind, ParentId = post.Id, AuthorName = who, AuthorHandle = who.Replace(" ", "", StringComparison.Ordinal).ToLowerInvariant() + ".example",
+                Kind = kind, ParentId = post.Id, AuthorName = who, Link = "https://bsky.app/", AuthorHandle = who.Replace(" ", "", StringComparison.Ordinal).ToLowerInvariant() + ".example",
                 CreatedAt = now.AddHours(-hoursAgo), FetchedAt = now, Text = text, Seen = seen,
             });
         }
