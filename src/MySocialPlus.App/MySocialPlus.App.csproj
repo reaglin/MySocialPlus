@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>MySocialPlus</AssemblyName>
+    <RootNamespace>MySocialPlus.App</RootNamespace>
+    <!-- Declares PerMonitorV2, so text stays sharp on a high-DPI screen. -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MySocialPlus.Core\MySocialPlus.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- About ▸ Created by Dr. Ron Eaglin (portfolio rule): the 256 px copy. -->
+    <Resource Include="Images\dr-ron-eaglin.jpg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The one AI layer for all of Ron's programs (..\AiManager), from C:\nuget-local. App only:
+         Core has no AI package. -->
+    <PackageReference Include="Eaglin.AiManager" Version="1.6.0" />
+    <PackageReference Include="Eaglin.AiManager.Wpf" Version="1.6.0" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <!-- Profiles on networks the app cannot read open inside the program (CLAUDE.md, rule 1). -->
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
+  </ItemGroup>
+
+</Project>

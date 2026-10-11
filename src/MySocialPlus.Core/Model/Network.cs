@@ -35,7 +35,7 @@ public sealed record NetworkInfo(
             "someone", "https://bsky.app/profile/{0}"),
         Network.Facebook => new(n, "Facebook", false, false,
             "Facebook does not let any program read a friend's posts. MySocial+ can open their profile for you, " +
-            "but it cannot tell you when something is new. (Reading your own Facebook posts comes in a later version.)",
+            "but it cannot tell you when something is new.",
             "name hidden by Facebook", "https://www.facebook.com/{0}"),
         Network.Instagram => new(n, "Instagram", false, false,
             "Instagram does not let any program read a friend's posts, or a personal account's own comments.",
