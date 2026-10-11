@@ -22,7 +22,7 @@ Claude never marks ✅ on its own.
 
 | # | Task | Done when |
 |---|---|---|
-| 0.1 | ⚠️ `git init`, GitHub repo `reaglin/MySocialPlus` (private), `.gitignore` (bin, obj, manual-test, shots) | First commit pushed — done 2026-10-11; Ron to confirm the repo |
+| 0.1 | ⚠️ `git init`, GitHub repo `reaglin/MySocialPlus` (**public**, Ron 2026-10-11), `.gitignore` (bin, obj, manual-test, shots) | Pushed 2026-10-11 |
 | 0.2 | ⚠️ `MySocialPlus.slnx`, `Directory.Build.props` (`MySocialPlusVersion` 0.1.0, nullable, TreatWarningsAsErrors) | `dotnet build` clean — built 2026-10-11 |
 | 0.3 | ⚠️ `MySocialPlus.Core` (net10.0), `MySocialPlus.App` (net10.0-windows, WPF), xUnit tests | `dotnet test` green — 33 tests, plus 1 live test run with `MSP_LIVE=1` |
 | 0.4 | ⚠️ `Eaglin.AiManager` + `.Wpf` **1.6.0** referenced from `C:\nuget-local` | The app builds against the feed — built 2026-10-11 |
@@ -58,6 +58,31 @@ Claude never marks ✅ on its own.
 | 3.2 | ⚠️ My Posts ← Ron's posts (`getAuthorFeed`) + notifications (replies, likes, reposts, quotes, mentions, follows); posts the activity is about are fetched if older; the session refreshes itself, and signs in again from the app password | Fixture tests (saved real answers + a lexicon-shaped notifications file) — **real run with Ron's account is hand-test 4** |
 | 3.3 | ⚠️ My Friends ← Ron ticks people from everyone he follows (all pages), finds by name, picks or makes the topic. Friends are read from the public API, no sign-in needed | Live test (`MSP_LIVE=1`) reads a real account and pages a 700-follow list; hand-test 3 |
 | 3.4 | ⚠️ Poller: every 15 minutes while open (open question 4), back-off doubling to 2 h on a failure or "slow down", never sooner than Bluesky asks; Check now / F5; next check and last checked shown | `PollScheduleTests` (times given, no clock); hand-test 5 |
+
+## Phase 8 — what to remember about friends, My Events, My Things (added 2026-10-11)
+
+Ron, 2026-10-11: the program works **with or without social media**; two more headings, **My Events**
+and **My Things**; and for people and things **a flexible structure** — name/value pairs that grow
+without changing code. Numbered 8 so the phases above keep their numbers. Built the same day.
+
+| # | Task | Done when |
+|---|---|---|
+| 8.1 | ⚠️ Four headings: My Posts, My Friends, **My Events**, **My Things**; an older tree.json gets the new two; topics keep to their own heading | `EventsAndThingsTests` |
+| 8.2 | ⚠️ **Details**: any number of name/value pairs on a person, event or thing (text, note, date, birthday, number, money, link, phone, email); rename or remove any; "Remind me" on dates | Tests; hand-test 6 |
+| 8.3 | ⚠️ **Kinds as data**: `templates.json` (Friend, Family member, Colleague; Concert, Race, **Adventure race**, Yoga or fitness class, Dance, Trip…; Car, House, Coffee maker, Computer, Furniture, Appliance, Bicycle, Boat, Document, Subscription… 38 in all), written on first run and Ron's to edit; **Save these details as a new kind…** | Tests (shipped set, Ron's file kept, newer kinds added); hand-test 6 |
+| 8.4 | ⚠️ **Log**: dated entries with an optional cost (service history, repairs, notes from a talk), with a total | Hand-test 8 |
+| 8.5 | ⚠️ **Events**: when (date, time, all day, end), where, repeats (week, month, year), "Me" (thinking about it, going, went, didn't go); **Add to my calendar** (.ics) | Tests (repeat, .ics); hand-test 7 |
+| 8.6 | ⚠️ **Going with**: friends from the tree or any name, **Add as a new friend**; each with their email and phone; **Email everyone**, **Copy emails**, **Copy phone numbers** (for a group text); says whose email or phone is missing | Tests (`Contacts`); hand-test 7 |
+| 8.7 | ⚠️ **Agenda**: timed steps (check-in, start, cut-offs…), in time order, in the calendar file too | Tests; hand-test 7 |
+| 8.8 | ⚠️ **Coming up** on What's new: events, birthdays (with the age), Remind-me dates for 30 days, and overdue ones for a week | Tests; hand-test 6 |
+| 8.9 | ⚠️ **A friend's page**: big buttons — **Open Facebook profile** (inside the program), **Open Google Photos** (any link detail), **Email**, **Add a social media profile…**; a pasted address like `www.facebook.com/name` becomes the handle; Facebook is the first choice when adding someone | Tests (`NormalizeHandle`); hand-test 6 |
+| 8.10 | ⚠️ **My Events / My Things pages**: upcoming and past events, things by topic, New event… / New thing… / New topic…; the Add button under the tree follows the heading | Hand-tests 7–8 |
+| 8.11 | ⚠️ **Getting started without social media**: a friend, an event, a thing; Bluesky is optional | Hand-test 6 |
+| 8.12 | ⚠️ UX: walkthrough + heuristics on the new pages (2026-10-11, the four real use cases) | **17 findings, 15 fixed:** Remove buttons say Remove and ask first when something would be lost; **Add someone else…** takes name, email, phone and "also add to My Friends"; **Add email or phone…** beside a teammate missing them; edits saved on closing; the link bar updates as soon as a link or email is typed; a thing's history comes before its details, and empty suggested details fold behind "Show N empty details"; a bad agenda time is reported; a hint under Coming up on clearing reminders; Open Facebook profile on the Posts tab too; "profile" wording throughout; odd Facebook addresses (people/…, share/…) kept whole; Kind cannot be cleared to nothing; "Am I going?"; the Facebook explanation grey, not warning yellow; New topic tooltip; a short footer; Add to my calendar waits for a date. **Recorded:** 8.15, 8.16 |
+| 8.15 | Edit a log entry or an agenda step in place (today: remove and add again) — UX finding 6 | Hand-test |
+| 8.16 | A **Done** / **Next date…** button on an overdue reminder under Coming up — UX finding 8 | Hand-test |
+| 8.13 | Export a person's or an event's contacts as vCard, if Ron wants them on his phone | — idea, waits for use |
+| 8.14 | Photos or receipts attached to a thing (a picture of the VIN plate, the warranty PDF) | — idea, waits for use |
 
 ## Phase 4 — Facebook (Ron's own posts) ⬜
 

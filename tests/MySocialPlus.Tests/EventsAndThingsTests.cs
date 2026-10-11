@@ -205,11 +205,12 @@ public class EventsAndThingsTests
         race.Event!.People.Add(new EventPerson { PersonId = a.Id, Name = "Ann" });
         race.Event.People.Add(new EventPerson { PersonId = b.Id, Name = "Bo" });
         race.Event.People.Add(new EventPerson { Name = "Coach" });            // not in the tree
+        race.Event.People.Add(new EventPerson { Name = "Pat", Email = "pat@example.com", Phone = "555-0199" });   // not a friend, but reachable
 
         var c = Contacts.For(t, race);
-        Assert.Equal("ann@example.com; bo@example.com", Contacts.EmailList(c));
-        Assert.Equal("555-0101", Contacts.PhoneList(c));
-        Assert.Equal("mailto:ann%40example.com,bo%40example.com?subject=Nationals", Contacts.MailTo(c, "Nationals"));
+        Assert.Equal("ann@example.com; bo@example.com; pat@example.com", Contacts.EmailList(c));
+        Assert.Equal("555-0101, 555-0199", Contacts.PhoneList(c));
+        Assert.Equal("mailto:ann%40example.com,bo%40example.com,pat%40example.com?subject=Nationals", Contacts.MailTo(c, "Nationals"));
         Assert.Equal(["Bo", "Coach"], Contacts.Missing(c, DetailKind.Phone));
 
         SocialTree.Rename(a, "Ann Lee");                                     // the tree's name wins over the saved one

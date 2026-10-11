@@ -34,7 +34,7 @@ public sealed class PersonWindow : Window
         foreach (var k in templates?.For(TemplateFor.Person) ?? []) _kind.Items.Add(k);
         _kind.SelectedIndex = _kind.Items.Count > 0 ? 0 : -1;
         _person = at.Kind == NodeKind.Person ? at : null;
-        Title = _person is null ? "Add a person" : $"Add an account for {_person.Name}";
+        Title = _person is null ? "Add a person" : $"Add a social media profile for {_person.Name}";
         Width = 500;
         SizeToContent = SizeToContent.Height;
         ResizeMode = ResizeMode.NoResize;
@@ -65,7 +65,7 @@ public sealed class PersonWindow : Window
         var stack = new StackPanel { Margin = new Thickness(20, 16, 20, 16) };
         if (_person is null)
         {
-            stack.Children.Add(Ui.Text("Add someone to your tree. You can give them more accounts later (right-click them ▸ Add an account)."));
+            stack.Children.Add(Ui.Text("Add someone to your tree. Their page has room for more profiles, a birthday, phone, email and anything else."));
             stack.Children.Add(Ui.Label("Name"));
             stack.Children.Add(_name);
             stack.Children.Add(Ui.Label("Topic"));
@@ -79,7 +79,7 @@ public sealed class PersonWindow : Window
         }
         else
         {
-            stack.Children.Add(Ui.Text($"Add {_person.Name}'s account on another network."));
+            stack.Children.Add(Ui.Text($"Paste the address of {_person.Name}'s profile — any address that opens it works."));
         }
         stack.Children.Add(Ui.Label("Network"));
         stack.Children.Add(_network);

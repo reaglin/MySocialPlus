@@ -79,3 +79,48 @@ delete both folders.
 
 **Tell Claude:** anything that confused you, anything that should be worded differently, and whether
 15 minutes between checks is right (open question 4).
+
+---
+
+## Phase 8 — friends' details, My Events, My Things (2026-10-11)
+
+None of these need social media. Try them on the sample first (`--sample`), then with your own data.
+
+### Test 6 — a friend: one click to their Facebook profile, and things worth remembering
+
+1. **Add person** (under the tree). Type the name, Kind **Friend**, Network **Facebook**, and paste the
+   address of their profile as you copied it from the browser (`www.facebook.com/…` — with or without
+   `https://`). **Add person**.
+2. Their page opens on **About**: a big **Open Facebook profile** button at the top. Press it: their
+   profile opens inside MySocial+ (sign in to Facebook there the first time).
+3. Fill in a **Birthday** like `3/12` (no year) or `3/12/1984`; it should show as "March 12" or
+   "March 12, 1984". Add **Children**, **Likes**.
+4. **Google Photos**: in Google Photos open People & pets, pick them, copy the address from the browser,
+   and paste it into the **Google Photos** detail. Click elsewhere — an **Open Google Photos** button
+   appears at the top of their page.
+5. **Add a detail**: type any name ("Shoe size", "Favorite restaurant") and press Add detail.
+6. On the sample, **What's new ▸ Coming up** lists Sarah Lee's birthday ("turns 42") and Manny Otero's.
+
+### Test 7 — an event with a team (your adventure race)
+
+1. Select **My Events**, press **New event…**: name it, Kind **Adventure race**, the date and a time.
+2. On its page: **Where**, **Ends** (the next day), Me: **Going**.
+3. **Going with**: pick a friend from the list and **Add**; type a teammate who is not in My Friends yet
+   and press **Add as a new friend** — they now appear under My Friends too. Fill in their Email and
+   Phone on their page (click their name).
+4. **Agenda**: add the steps (check-in, pre-race meeting, start, cut-offs) with dates and times; they
+   sort themselves into time order.
+5. **Email everyone** opens your mail program with every address. **Copy phone numbers** — paste them
+   into a group text on your phone or in Phone Link.
+6. **Add to my calendar…** opens the event in Outlook (or your calendar), with the team and agenda in it.
+7. On the sample, open **Nationals Adventure Race** to see all of this filled in.
+
+### Test 8 — a thing (your car)
+
+1. Select **My Things**, **New thing…**: name it, Kind **Car**.
+2. Fill in Year, Make, Model, License plate. Set **Registration renews** to a date in the next month —
+   **Remind me** is already ticked — then press **What's new**: it is under **Coming up**.
+3. **Service history**: add an oil change with today's date and a cost; the total shows under it.
+4. **Save these details as a new kind…** on something unusual (a kayak): next time, New thing… offers
+   **Kayak** with the same detail names, empty.
+5. File ▸ Open the data folder: `templates.json` is there — the list of kinds, which you can edit.

@@ -120,6 +120,8 @@ public class TreeTests
     [InlineData("https://m.facebook.com/jane.sample.42", "jane.sample.42")]
     [InlineData("jane.sample.42", "jane.sample.42")]
     [InlineData("https://www.facebook.com/profile.php?id=100012345", "https://www.facebook.com/profile.php?id=100012345")]
+    [InlineData("www.facebook.com/people/Jane-Doe/100012345/", "https://www.facebook.com/people/Jane-Doe/100012345/")]
+    [InlineData("https://www.facebook.com/share/abc123/", "https://www.facebook.com/share/abc123/")]
     public void A_pasted_Facebook_address_becomes_the_handle(string pasted, string handle)
     {
         var fb = NetworkInfo.For(Network.Facebook);

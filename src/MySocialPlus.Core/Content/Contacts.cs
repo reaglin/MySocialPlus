@@ -17,13 +17,16 @@ public static class Contacts
         return people.Select(p =>
         {
             var node = p.PersonId is null ? null : tree.Find(p.PersonId);
-            return new Contact(node?.Name ?? p.Name, node, First(node, DetailKind.Email), First(node, DetailKind.Phone));
+            return new Contact(node?.Name ?? p.Name, node,
+                               First(node, DetailKind.Email) ?? Blank(p.Email), First(node, DetailKind.Phone) ?? Blank(p.Phone));
         }).ToList();
     }
 
     /// <summary>The first filled-in detail of that kind — "Email", "Work email", whatever Ron called it.</summary>
     private static string? First(TreeNode? n, DetailKind kind) =>
         n?.Details.FirstOrDefault(d => d.Kind == kind && !string.IsNullOrWhiteSpace(d.Value))?.Value.Trim();
+
+    private static string? Blank(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
     /// <summary>"sarah@x.com; brenda@y.org" — the separator Outlook and most mail programs accept.</summary>
     public static string EmailList(IEnumerable<Contact> c) => string.Join("; ", c.Select(x => x.Email).OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase));

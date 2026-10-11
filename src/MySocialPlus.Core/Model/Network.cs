@@ -77,7 +77,10 @@ public sealed record NetworkInfo(
                 if (Network == Network.Bluesky && rest.StartsWith("profile/", StringComparison.OrdinalIgnoreCase)) rest = rest[8..];
                 if (Network == Network.Reddit && rest.StartsWith("user/", StringComparison.OrdinalIgnoreCase)) rest = rest[5..];
                 if (Network == Network.LinkedIn && rest.StartsWith("in/", StringComparison.OrdinalIgnoreCase)) rest = rest[3..];
-                return rest.Split('/')[0].TrimStart('@');
+                // facebook.com/people/Jane-Doe/1000…, /share/…: not a plain handle — keep the whole address, which opens it.
+                if (rest.Contains('/', StringComparison.Ordinal) || rest.Length == 0)
+                    return s.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? s : "https://" + s;
+                return rest.TrimStart('@');
             }
         return s.StartsWith("http", StringComparison.OrdinalIgnoreCase) || s.Contains('/', StringComparison.Ordinal)
             ? (s.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? s : "https://" + s)

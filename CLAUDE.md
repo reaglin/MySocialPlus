@@ -4,21 +4,30 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-**MySocial+** (repo `MySocialPlus`) — a Windows 10/11 program that shows Ron's social media **his
-way instead of the algorithm's**: a **topic tree on the left**, the **content on the right**, and a
-small **badge on every node that has something new**. Two roots to start: **My Posts** (activity on
-what Ron posted — new comments, replies, reactions) and **My Friends** (people, grouped into topics
-Ron makes, each with their accounts across networks). Everything in time order; nothing ranked.
+**MySocial+** (repo `MySocialPlus`) — a Windows 10/11 program for the **people, plans and things in
+Ron's life, in his order instead of an algorithm's**: a **topic tree on the left**, a **page on the
+right**, and a **badge on every node that has something new**. Four headings:
+- **My Posts** — Ron's own social media (activity on what he posted). Optional.
+- **My Friends** — people in topics he makes, with what to remember about them (birthday, children,
+  likes…) and one click to their Facebook profile or Google Photos; their posts where a network allows.
+- **My Events** — races, concerts, classes, trips: when, where, who is going (with their email and
+  phone), the agenda, Email everyone, Add to my calendar.
+- **My Things** — car, house, coffee maker…: details, reminders (registration renews, warranty ends)
+  and a dated history.
+
+People, events and things carry **flexible name/value details**; the kinds (Friend, Race, Car…) are
+data in `templates.json`, so new kinds need no code (Ron, 2026-10-11). **Social media is optional.**
 WPF on .NET 10; AI through the shared `Eaglin.AiManager`.
 
 **For Ron's personal use — not a Store program** (2026-10-11). His networks: **Bluesky and
-Facebook**, mostly.
+Facebook**, mostly. **The repo is public** (Ron, 2026-10-11): sample data and tests use made-up people,
+handles and addresses — never Ron's friends' real names or profiles.
 
-**Status: phases 0–3 built 2026-10-11** — the tree, the cache and badges, the window (What's new,
-content pane, dialogs), and Bluesky (app-password sign-in, Ron's notifications, friends from the
-public API, choosing people he follows). 33 tests green, plus a live Bluesky test (`MSP_LIVE=1`).
-⚠️ Ron's hand-tests 1–5 (`docs/MANUAL-TESTING.md`) are next; Facebook (phase 4) starts with his
-Graph API Explorer check (task 4.1). `docs/PLAN.md` has the decisions and what each network allows.
+**Status, 2026-10-11:** phases 0–3 (tree, cache and badges, window, Bluesky) and **phase 8** (details,
+templates, My Events, My Things, Coming up) built. 52 tests green, plus a live Bluesky test
+(`MSP_LIVE=1`). ⚠️ Ron's hand-tests 1–8 (`docs/MANUAL-TESTING.md`) are next; Facebook (phase 4) starts
+with his Graph API Explorer check (task 4.1). Ron: *"We are going to learn a lot about what is really
+useful for this type of app as we use it"* — let use drive what comes next.
 
 **Checking the window:** `.\tools\tour-window.ps1 -Exe src\MySocialPlus.App\bin\Debug\net10.0-windows\MySocialPlus.exe`
 opens the sample (`--sample`: made-up people, nothing read, nothing saved), selects tree nodes through
@@ -69,17 +78,19 @@ after ~1.2 s on it, so wait longer than that before photographing.
 ```
 MySocialPlus.slnx
 ├── src/MySocialPlus.Core/   net10.0, no UI (DPAPI only through ProtectedData, guarded)
-│   Model/     SocialTree (the roots and the rules), TreeNode (root | topic | person | account), Account,
+│   Model/     SocialTree (the roots and the rules), TreeNode (root | topic | person | account | event | thing), Account,
+│              Details (Detail, LogEntry, EventInfo, AgendaItem, Dates), Templates (Template, TemplateSet),
 │              Item (post | comment | reaction | repost | mention | follow), Network + NetworkInfo
 │              (what each network lets the app read, and why not, in words for Ron)
-│   Content/   Threads: a post with its activity, time order only
+│   Content/   Threads (a post with its activity), ComingUp, Contacts (a team's email/phone), Ics
 │   Sources/   ISource + SourceException (a problem kind + a message for Ron); Bluesky/ (client,
 │              mapper, source). Later: Meta/, Mastodon/, Rss/, Reddit/
 │   Sync/      SyncService (reads what is due, files it), PollSchedule (interval + back-off), Badges
-│   Store/     TreeStore (tree.json), ItemCache (items.db, SQLite, keyed by account + id), DataPaths
+│   Store/     TreeStore (tree.json), ItemCache (items.db, SQLite, keyed by account + id), TemplateStore (templates.json), DataPaths
+│   Templates/ default-templates.json (embedded: the kinds a first run starts with)
 │   Secrets/   SecretStore (DPAPI, one file per secret)
 │   Sample/    SampleData (--sample)
-├── src/MySocialPlus.App/    net10.0-windows, WPF: MainWindow (tree | What's new / content | welcome),
+├── src/MySocialPlus.App/    net10.0-windows, WPF: MainWindow (tree | What's new / content | welcome), Views/ (DetailsView, GroupView),
 │                            Windows/ (dialogs built in code), ViewModels/, AI Settings, About
 ├── tests/MySocialPlus.Tests/  xUnit; saved API answers in tests/fixtures (no network in tests,
 │                              except LiveBlueskyTests with MSP_LIVE=1)

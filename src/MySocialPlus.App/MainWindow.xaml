@@ -186,7 +186,7 @@
                 <TextBlock DockPanel.Dock="Top" Style="{StaticResource Hint}" Margin="12,8,12,6"
                            Text="A number means something new since you last opened that node. Staying on a person or topic for a moment marks everything inside it as seen." />
                 <WrapPanel DockPanel.Dock="Bottom" Margin="8">
-                    <Button Content="New topic" Click="NewTopic_Click" Margin="0,0,6,6" ToolTip="Make a topic under My Friends, like Family or Colleagues." />
+                    <Button Content="New topic" Click="NewTopic_Click" Margin="0,0,6,6" ToolTip="Make a topic under the selected heading, like Family, Running or Vehicles." />
                     <Button x:Name="AddButton" Content="Add person" Click="AddButton_Click" Margin="0,0,6,6" ToolTip="Adds to the selected heading: a person, an event or a thing." />
                 </WrapPanel>
                 <TreeView x:Name="Tree" BorderThickness="0" Background="Transparent" Padding="4"
@@ -327,13 +327,19 @@
                             <ItemsControl x:Name="Notices" Margin="0,8,0,0" Focusable="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Background="{StaticResource WarnBack}" CornerRadius="6" Padding="10,6" Margin="0,4,0,0">
+                                        <Border x:Name="nb" Background="{StaticResource WarnBack}" CornerRadius="6" Padding="10,6" Margin="0,4,0,0">
                                             <DockPanel>
                                                 <Button DockPanel.Dock="Right" Content="{Binding ActionText}" Tag="{Binding}" Click="Notice_Click" Margin="12,0,0,0"
                                                         VerticalAlignment="Center" Visibility="{Binding ActionText, Converter={StaticResource ShowIfAny}}" />
-                                                <TextBlock Text="{Binding Text}" TextWrapping="Wrap" Foreground="{StaticResource Warn}" VerticalAlignment="Center" />
+                                                <TextBlock x:Name="nt" Text="{Binding Text}" TextWrapping="Wrap" Foreground="{StaticResource Warn}" VerticalAlignment="Center" />
                                             </DockPanel>
                                         </Border>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Info}" Value="True">
+                                                <Setter TargetName="nb" Property="Background" Value="{StaticResource Pane}" />
+                                                <Setter TargetName="nt" Property="Foreground" Value="{StaticResource Muted}" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -346,7 +352,10 @@
                         <ContentControl x:Name="PageHost" Focusable="False" Visibility="Collapsed" />
                         <ScrollViewer x:Name="Overview" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
                           <StackPanel Margin="20,12" MaxWidth="680" HorizontalAlignment="Left">
-                            <TextBlock x:Name="ComingUpHeading" Text="Coming up" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,6" />
+                            <StackPanel x:Name="ComingUpHeading" Margin="0,0,0,6">
+                                <TextBlock Text="Coming up" FontSize="17" FontWeight="SemiBold" />
+                                <TextBlock Style="{StaticResource Hint}" Text="The next 30 days. Open one to change it; a reminder goes away when you change its date or untick Remind me." />
+                            </StackPanel>
                             <ItemsControl x:Name="ComingUpList" Focusable="False" Margin="0,0,0,12">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>

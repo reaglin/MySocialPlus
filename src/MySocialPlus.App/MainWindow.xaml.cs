@@ -15,7 +15,7 @@ using MySocialPlus.Core.Sync;
 namespace MySocialPlus.App;
 
 /// <summary>A line above the content: something missing or wrong, and what to do about it.</summary>
-public sealed record Notice(string Text, string? ActionText = null, Action? Act = null);
+public sealed record Notice(string Text, string? ActionText = null, Action? Act = null, bool Info = false);
 
 /// <summary>
 /// The tree on the left, the content of the selected node on the right (CLAUDE.md). Opening a node
@@ -80,6 +80,8 @@ public partial class MainWindow : Window
             Tree.Focus();
             if (_s.ReadsNetworks) { _timer.Start(); await SyncAsync(force: false); }
         };
+        // The last thing typed on a page is saved on closing: it may still be in a box, or waiting on the save timer.
+        Closing += (_, _) => { System.Windows.Input.Keyboard.ClearFocus(); _saveSoon.Stop(); SaveTree(); };
         Closed += (_, _) => { _timer.Stop(); _seenTimer.Stop(); _s.Dispose(); };
     }
 
@@ -280,7 +282,7 @@ public partial class MainWindow : Window
             : "Nothing coming up in the next 30 days, and nothing new. Open anything in the tree.";
         SortPanel.Visibility = Visibility.Collapsed;
         var notices = ProblemNotices(_s.Tree.Accounts().ToList());
-        if (!_s.ReadsNetworks) notices.Insert(0, new Notice(SampleText));
+        if (!_s.ReadsNetworks) notices.Insert(0, new Notice(SampleText, Info: true));
         Notices.ItemsSource = notices;
         ThreadList.ItemsSource = null;
         ThreadList.Visibility = Visibility.Collapsed;
@@ -365,7 +367,7 @@ public partial class MainWindow : Window
                 return Views.GroupView.ThingLine(node) is { Length: > 0 } t ? t : "Fill in what you want to keep below.";
             case NodeKind.Person:
                 var accounts = node.Children.Where(c => c.Account is not null).Select(c => c.Account!).ToList();
-                return accounts.Count == 0 ? (node.TypeName is { } kind ? $"{kind}. No social media linked — that is fine; right-click to add a profile." : "No social media linked — that is fine; right-click to add a profile.")
+                return accounts.Count == 0 ? (node.TypeName is { } kind ? $"{kind}. No social media linked — that is fine. Use Add a social media profile… below." : "No social media linked — that is fine. Use Add a social media profile… below.")
                     : "On " + string.Join(", ", accounts.Select(a => a.IsReadable ? $"{a.Info.Name} (@{a.Handle}, {Checked(a)})" : $"{a.Info.Name} (profile only)")) + ".";
             default:
                 var acc = node.Account!;
@@ -410,7 +412,7 @@ public partial class MainWindow : Window
     private List<Notice> NoticesFor(TreeNode node)
     {
         var list = new List<Notice>();
-        if (!_s.ReadsNetworks) list.Add(new Notice(SampleText));
+        if (!_s.ReadsNetworks) list.Add(new Notice(SampleText, Info: true));
         list.AddRange(ProblemNotices(node.SelfAndDescendants().Where(n => n.Account is not null).Select(n => n.Account!).ToList()));
 
         // Only for a person or an account: on a topic, a line per Facebook friend would bury the posts.
@@ -429,8 +431,10 @@ public partial class MainWindow : Window
                         ? $"Your {a.Info.Name} account: reading your own {a.Info.Name} posts is not built yet, so it has no number."
                         : $"{who} is {also}on {a.Info.Name}. {a.Info.WhyNot}";
                     // A friend's page already has the big Open profile button; the line only explains.
-                    list.Add(url is null || (!a.IsMine && node.Kind == NodeKind.Person) ? new Notice(text)
-                        : new Notice(text, $"Open {a.Info.Name} profile", () => OpenProfile(a.Info.Name + " — " + (a.IsMine ? "you" : who), url)));
+                    // An explanation, not a problem: grey, not yellow. Its button is left out where the page's big one is showing.
+                    var bigButton = !a.IsMine && node.Kind == NodeKind.Person && PageFor(node, node.AccountKeys().Count) == Page.Details;
+                    list.Add(url is null || bigButton ? new Notice(text, Info: true)
+                        : new Notice(text, $"Open {a.Info.Name} profile", () => OpenProfile(a.Info.Name + " — " + (a.IsMine ? "you" : who), url), Info: true));
                 }
             }
         }

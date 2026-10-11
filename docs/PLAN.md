@@ -60,6 +60,33 @@ Meta changes these rules often.
 | UI | WPF on .NET 10 | Matches the other programs |
 | Audience | **Ron only — not on the Store** | Ron. The Meta app runs in Development mode with Ron as admin, so no App Review |
 | Networks first | **Bluesky, then Facebook** | Ron uses them most; the rest later |
+| Repository | **Public**, `github.com/reaglin/MySocialPlus` | Ron, 2026-10-11. So nothing personal goes in it: sample data and tests use made-up people and addresses |
+| Social media | **Optional — the program works without it** | Ron, 2026-10-11: *"all social media is optional. It is useful to be able to click and go to a friend's social media."* |
+| Two more headings | **My Events** and **My Things** | Ron, 2026-10-11. Events: a concert, dance, race, yoga class… with the people going. Things: a car (license, make/year/model, service…), a house, a coffee maker, a computer, furniture — big and small |
+| Information about people and things | **Flexible name/value details**, new kinds by data not code | Ron: *"a flexible structure where an item can be added without changing the code by having flexible name/value pairs."* Built as details (name, value, kind) + templates in `templates.json` + "Save as a new kind" |
+| A friend's Facebook | **One click to the profile** | Ron: for many friends *"all I really need is to link to their Facebook profile"* — he pastes the address; the friend's page opens it with one button |
+| Google Photos | **A link on the person** | Ron's photos of a friend are a People & pets search in Google Photos; its address is kept as a link and opened with one button. Google no longer lets programs read a library by person, so the program does not show the photos itself |
+| Team events | **Agenda + team + contact them all** | Ron's adventure race with three friends: the plan step by step, the team from My Friends, Email everyone, and the email and phone lists to paste into a group text (Windows has no reliable way to start a group text itself) |
+| What to build next | **Learn from use** | Ron: *"We are going to learn a lot about what is really useful for this type of app as we use it."* |
+
+## My Friends, My Events, My Things (2026-10-11)
+
+```
+TreeNode (Person | Event | Thing)
+  TypeName   "Friend", "Race", "Car" — the template it started from
+  Details    [ {Name, Value, Kind, Remind} ]   any number, any names, in Ron's order
+  Log        [ {Date, Text, Cost} ]            service history, repairs, notes from a talk
+  Event      {Start, End, AllDay, Location, Repeat, Status, People[{PersonId|Name}], Agenda[{At, Text, Where}]}
+templates.json   [ {Name, For: person|event|thing, Group, Fields[{Name, Kind, Remind, Hint}], LogName} ]
+```
+
+- **Kinds** come from `Documents\MySocialPlus\templates.json`, written from the shipped set on the first run;
+  after that the file is Ron's. A newer program adds kinds it ships (by the file's `version`) but never
+  removes or changes his. Choosing a kind adds its details, empty; nothing typed is ever lost.
+- **Values are text**, so nothing is refused; a date is `yyyy-MM-dd`, a birthday without a year `--MM-dd`.
+- **Coming up** (What's new) is built from the tree alone: events (following their repeat), birthdays,
+  and dates marked Remind me, for the next 30 days, plus reminders up to a week overdue.
+- **Not a password store:** tree.json is plain JSON (it is Ron's to back up and read). The pages say so.
 
 ## What the AI is for (proposals — Ron to choose, open question 6)
 

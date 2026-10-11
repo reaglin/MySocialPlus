@@ -19,6 +19,9 @@ public sealed class DetailsView : UserControl
     private readonly AppSession _s;
     private readonly StackPanel _body = new() { Margin = new Thickness(20, 12, 20, 24), MaxWidth = 860, HorizontalAlignment = HorizontalAlignment.Left };
     private TreeNode? _node;
+    private WrapPanel? _linkHost;
+    /// <summary>Empty suggested details are folded away until Ron asks to see them.</summary>
+    private bool _showEmpty;
 
     /// <summary>Something changed: save soon, and refresh the tree's label.</summary>
     public event Action<TreeNode>? Changed;
@@ -39,6 +42,7 @@ public sealed class DetailsView : UserControl
 
     public void Show(TreeNode node)
     {
+        if (!ReferenceEquals(_node, node)) _showEmpty = false;
         _node = node;
         Render();
     }
@@ -55,13 +59,16 @@ public sealed class DetailsView : UserControl
     {
         _body.Children.Clear();
         var n = _node!;
+        _linkHost = new WrapPanel { Margin = new Thickness(0, 0, 0, 4) };
+        _body.Children.Add(_linkHost);
         LinkBar(n);
         NameAndKind(n);
         if (n.Event is not null) EventPanel(n, n.Event);
         if (n.Event is not null) Team(n);
         if (n.Event is not null) Agenda(n.Event);
-        DetailRows(n);
-        Log(n);
+        // A thing's history is what Ron adds to most (a service, a repair), so it comes before its long list of details.
+        if (n.Kind == NodeKind.Thing) { Log(n); DetailRows(n); }
+        else { DetailRows(n); Log(n); }
         if (n.Kind == NodeKind.Person) EventsWith(n);
         Footer(n);
     }
@@ -80,11 +87,17 @@ public sealed class DetailsView : UserControl
         return b;
     }
 
-    private static Button Remove(string what, Action remove)
+    /// <summary>A Remove button. With <paramref name="confirm"/>, it asks first — there is no undo.</summary>
+    private Button Remove(string what, Action remove, string? confirm = null)
     {
-        var b = new Button { Content = "", FontFamily = new FontFamily("Segoe MDL2 Assets"), FontSize = 11, Width = 28, MinHeight = 26, Margin = new Thickness(6, 0, 0, 0), ToolTip = $"Remove {what}" };
+        var b = new Button { Content = "Remove", Padding = new Thickness(8, 1, 8, 1), MinHeight = 26, Margin = new Thickness(6, 0, 0, 0), ToolTip = $"Remove {what}" };
         AutomationProperties.SetName(b, $"Remove {what}");
-        b.Click += (_, _) => remove();
+        b.Click += (_, _) =>
+        {
+            if (confirm is not null && MessageBox.Show(Window.GetWindow(this), $"Remove {confirm}?\n\nThis cannot be undone.", "Remove",
+                                                       MessageBoxButton.OKCancel, MessageBoxImage.Question, MessageBoxResult.Cancel) != MessageBoxResult.OK) return;
+            remove();
+        };
         return b;
     }
 
@@ -109,7 +122,8 @@ public sealed class DetailsView : UserControl
     /// <summary>Buttons for every link Ron keeps (Google Photos, the race website) and for writing to a person.</summary>
     private void LinkBar(TreeNode n)
     {
-        var bar = new WrapPanel { Margin = new Thickness(0, 0, 0, 4) };
+        var bar = _linkHost!;
+        bar.Children.Clear();
         // A friend's profiles first: for many friends this one button is the whole point (Ron, 2026-10-11).
         foreach (var a in n.Children.Where(c => c.Account?.ProfileUrl is not null).Select(c => c.Account!))
         {
@@ -137,7 +151,6 @@ public sealed class DetailsView : UserControl
             b.Click += (_, _) => OpenMail("mailto:" + Uri.EscapeDataString(mail.Value.Trim()));
             bar.Children.Add(b);
         }
-        if (bar.Children.Count > 0) _body.Children.Add(bar);
     }
 
     private void NameAndKind(TreeNode n)
@@ -153,7 +166,7 @@ public sealed class DetailsView : UserControl
 
         var kinds = new ComboBox { MinWidth = 260, HorizontalAlignment = HorizontalAlignment.Left };
         AutomationProperties.SetName(kinds, "Kind");
-        kinds.Items.Add("(none)");
+        if (CurrentTemplate is null) kinds.Items.Add("(none)");   // a kind, once chosen, is changed, not cleared
         foreach (var t in _s.Templates.For(For).OrderBy(t => t.Group).ThenBy(t => t.Name, StringComparer.CurrentCulture))
             kinds.Items.Add(t.Name);
         kinds.SelectedItem = CurrentTemplate?.Name ?? "(none)";
@@ -194,6 +207,7 @@ public sealed class DetailsView : UserControl
             timeHint.Text = badStart || badEnd ? "Type a time like 7:30 PM or 19:30." : "";
             timeHint.Foreground = Brushes.Firebrick;
             startTime.IsEnabled = endTime.IsEnabled = !e.AllDay;
+            CalendarReady();
             Touch();
         }
         startDate.SelectedDateChanged += (_, _) => Apply();
@@ -219,13 +233,25 @@ public sealed class DetailsView : UserControl
         var status = new ComboBox { Width = 160, HorizontalAlignment = HorizontalAlignment.Left, ItemsSource = new[] { "Thinking about it", "Going", "Went", "Didn't go" }, SelectedIndex = (int)e.Status };
         AutomationProperties.SetName(status, "Am I going");
         status.SelectionChanged += (_, _) => { e.Status = (EventStatus)status.SelectedIndex; Touch(); };
-        _body.Children.Add(Row("Me", status));
+        _body.Children.Add(Row("Am I going?", status));
 
-        var cal = Small("Add to my calendar…", (_, _) => AddToCalendar(n),
-            "Makes a calendar file and opens it: Outlook or your calendar program asks to add the event.");
-        cal.Margin = new Thickness(0, 6, 0, 0);
-        cal.HorizontalAlignment = HorizontalAlignment.Left;
-        _body.Children.Add(Row("", cal));
+        _cal = Small("Add to my calendar…", (_, _) => AddToCalendar(n));
+        _cal.Margin = new Thickness(0, 6, 0, 0);
+        _cal.HorizontalAlignment = HorizontalAlignment.Left;
+        ToolTipService.SetShowOnDisabled(_cal, true);
+        CalendarReady();
+        _body.Children.Add(Row("", _cal));
+    }
+
+    private Button? _cal;
+
+    /// <summary>The calendar button works once the event has a date, and says so until then.</summary>
+    private void CalendarReady()
+    {
+        if (_cal is null || _node?.Event is not { } e) return;
+        _cal.IsEnabled = e.Start is not null;
+        _cal.ToolTip = e.Start is null ? "Give the event a date first (Starts, above)."
+                                       : "Makes a calendar file and opens it: Outlook or your calendar program asks to add the event.";
     }
 
     /// <summary>A date and a typed time; a time that cannot be read is reported and left out.</summary>
@@ -274,47 +300,35 @@ public sealed class DetailsView : UserControl
             if (name is Button nb) nb.Click += (_, _) => OpenNode?.Invoke(c.Person!);
             var reach = new TextBlock
             {
-                Text = string.Join("   ", new[] { c.Email, c.Phone }.OfType<string>()) is { Length: > 0 } r ? r
-                     : c.Person is null ? "not in My Friends — no contact details" : "no email or phone yet — add them on their page",
-                VerticalAlignment = VerticalAlignment.Center, Foreground = (Brush)Application.Current.FindResource("Muted"), Width = 360, TextTrimming = TextTrimming.CharacterEllipsis,
+                Text = string.Join("   ", new[] { c.Email, c.Phone }.OfType<string>()),
+                VerticalAlignment = VerticalAlignment.Center, Foreground = (Brush)Application.Current.FindResource("Muted"), Width = 320, TextTrimming = TextTrimming.CharacterEllipsis,
             };
-            _body.Children.Add(Across(name, reach, Remove(c.Name, () => { e.People.Remove(who); Touch(); Render(); })));
+            var row = Across(name, reach);
+            if (c.Email is null || c.Phone is null)
+                row.Children.Add(Small(c.Email is null && c.Phone is null ? "Add email or phone…" : c.Email is null ? "Add email…" : "Add phone…",
+                                       (_, _) => FillContact(c, who), "Their email and phone, for Email everyone and Copy phone numbers"));
+            row.Children.Add(Remove($"{c.Name} from this event", () => { e.People.Remove(who); Touch(); Render(); }));
+            _body.Children.Add(row);
         }
 
-        // Add a friend, or anyone by name (and optionally make them a friend).
+        // Add a friend from the tree, or a teammate by name with their email and phone.
         var pick = new ComboBox { Width = 220, DisplayMemberPath = "Name" };
-        AutomationProperties.SetName(pick, "Add a friend");
+        AutomationProperties.SetName(pick, "Choose a friend");
         foreach (var p in _s.Tree.People().Where(p => e.People.All(x => x.PersonId != p.Id)).OrderBy(p => p.Name, StringComparer.CurrentCulture))
             pick.Items.Add(p);
-        var add = Small("Add", (_, _) =>
+        var add = Small("Add friend", (_, _) =>
         {
-            if (pick.SelectedItem is not TreeNode p) return;
+            if (pick.SelectedItem is not TreeNode p) { pick.IsDropDownOpen = true; return; }
             e.People.Add(new EventPerson { PersonId = p.Id, Name = p.Name });
             Touch(); Render();
         });
-        var other = Ui.TextBox("Someone not in My Friends");
-        other.Width = 200;
-        other.Margin = new Thickness(18, 0, 0, 0);
-        var addOther = Small("Add", (_, _) =>
-        {
-            if (other.Text.Trim().Length == 0) return;
-            e.People.Add(new EventPerson { Name = other.Text.Trim() });
-            Touch(); Render();
-        });
-        var addFriend = Small("Add as a new friend", (_, _) =>
-        {
-            if (other.Text.Trim().Length == 0) return;
-            var person = TreeNode.Person(other.Text.Trim());
-            _s.Templates.Find("Friend", TemplateFor.Person)?.ApplyTo(person);
-            _s.Tree.Add(_s.Tree.MyFriends, person);
-            e.People.Add(new EventPerson { PersonId = person.Id, Name = person.Name });
-            Touch(); Render();
-        }, "Puts them under My Friends too, where you can add their email and phone.");
+        var addOther = Small("Add someone else…", (_, _) => AddTeammate(e),
+            "Someone who is not in My Friends yet: their name, email and phone — and, if you like, add them to My Friends too.");
+        addOther.Margin = new Thickness(18, 0, 0, 0);
         _body.Children.Add(new WrapPanel
         {
             Margin = new Thickness(0, 8, 0, 0),
-            Children = { Across(new TextBlock { Text = "Friend:", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) }, pick, add),
-                         Across(new TextBlock { Text = "Or a name:", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(18, 0, 6, 0) }, other, addOther, addFriend) },
+            Children = { Across(new TextBlock { Text = "Friend:", VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 6, 0) }, pick, add), addOther },
         });
 
         if (contacts.Count == 0) return;
@@ -332,6 +346,52 @@ public sealed class DetailsView : UserControl
             _body.Children.Add(Hint((noMail.Count > 0 ? $"No email for {string.Join(", ", noMail)}. " : "") +
                                     (noPhone.Count > 0 ? $"No phone for {string.Join(", ", noPhone)}. " : "") +
                                     "Add them on each person's page (an Email or Phone detail).", top: 6));
+    }
+
+    /// <summary>A teammate not in My Friends: name, email, phone — and into My Friends too unless Ron unticks it.</summary>
+    private void AddTeammate(EventInfo e)
+    {
+        var dlg = new ContactWindow("Add someone to this event", null, null, null, offerFriends: true) { Owner = Window.GetWindow(this) };
+        if (dlg.ShowDialog() != true) return;
+        if (dlg.AddToFriends)
+        {
+            var person = TreeNode.Person(dlg.PersonName);
+            _s.Templates.Find("Friend", TemplateFor.Person)?.ApplyTo(person);
+            if (dlg.Email.Length > 0) person.Set("Email", dlg.Email, DetailKind.Email);
+            if (dlg.Phone.Length > 0) person.Set("Phone", dlg.Phone, DetailKind.Phone);
+            _s.Tree.Add(_s.Tree.MyFriends, person);
+            e.People.Add(new EventPerson { PersonId = person.Id, Name = person.Name });
+        }
+        else
+        {
+            e.People.Add(new EventPerson { Name = dlg.PersonName, Email = dlg.Email.Length > 0 ? dlg.Email : null, Phone = dlg.Phone.Length > 0 ? dlg.Phone : null });
+        }
+        Touch(); Render();
+    }
+
+    /// <summary>Fills in a teammate's missing email or phone — on their page if they are a friend, on the event if not.</summary>
+    private void FillContact(Contact c, EventPerson who)
+    {
+        var dlg = new ContactWindow($"How to reach {c.Name}", c.Name, c.Email, c.Phone, offerFriends: false) { Owner = Window.GetWindow(this) };
+        if (dlg.ShowDialog() != true) return;
+        if (c.Person is { } p)
+        {
+            if (dlg.Email.Length > 0) Upsert(p, DetailKind.Email, "Email", dlg.Email);
+            if (dlg.Phone.Length > 0) Upsert(p, DetailKind.Phone, "Phone", dlg.Phone);
+        }
+        else
+        {
+            who.Email = dlg.Email.Length > 0 ? dlg.Email : null;
+            who.Phone = dlg.Phone.Length > 0 ? dlg.Phone : null;
+        }
+        Touch(); Render();
+
+        // Their first detail of that kind ("Email" or "Work email"), or a new one.
+        static void Upsert(TreeNode p, DetailKind kind, string name, string value)
+        {
+            var d = p.Details.FirstOrDefault(x => x.Kind == kind) ?? p.Set(name, "", kind);
+            d.Value = value;
+        }
     }
 
     private void Copy(string text, string what)
@@ -360,26 +420,35 @@ public sealed class DetailsView : UserControl
         {
             var when = new TextBlock { Text = a.At is { } t ? t.ToString("ddd MMM d · h:mm tt", CultureInfo.CurrentCulture) : "(no time)", Width = 190, VerticalAlignment = VerticalAlignment.Center, FontWeight = FontWeights.SemiBold };
             var what = new TextBlock { Text = a.Text + (string.IsNullOrWhiteSpace(a.Where) ? "" : $"  —  {a.Where}"), Width = 420, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
-            _body.Children.Add(Across(when, what, Remove("this step", () => { e.Agenda.Remove(a); Touch(); Render(); })));
+            _body.Children.Add(Across(when, what, Remove("this step", () => { e.Agenda.Remove(a); Touch(); Render(); }, $"the step \"{a.Text}\"")));
         }
         var date = new DatePicker { Width = 130, SelectedDate = e.Agenda.LastOrDefault()?.At?.Date ?? e.Start?.Date };
         AutomationProperties.SetName(date, "Step date");
         var time = Ui.TextBox("Step time"); time.Width = 80; time.Margin = new Thickness(6, 0, 0, 0);
         var text = Ui.TextBox("What happens"); text.Width = 240; text.Margin = new Thickness(6, 0, 0, 0);
         var where = Ui.TextBox("Where (optional)"); where.Width = 150; where.Margin = new Thickness(6, 0, 0, 0);
+        var stepHint = Hint("Date, time (like 6:00 AM), what happens, and where.");
         var add = Small("Add step", (_, _) =>
         {
             if (text.Text.Trim().Length == 0) { text.Focus(); return; }
+            var at = Combine(date.SelectedDate, time.Text, allDay: false, out var badTime);
+            if (badTime)
+            {
+                stepHint.Text = "That time could not be read. Type a time like 6:00 AM or 18:30, or leave it empty.";
+                stepHint.Foreground = Brushes.Firebrick;
+                time.Focus();
+                return;
+            }
             e.Agenda.Add(new AgendaItem
             {
-                At = Combine(date.SelectedDate, time.Text, allDay: false, out _),
+                At = at,
                 Text = text.Text.Trim(),
                 Where = where.Text.Trim().Length == 0 ? null : where.Text.Trim(),
             });
             Touch(); Render();
         });
         _body.Children.Add(new WrapPanel { Margin = new Thickness(0, 6, 0, 0), Children = { date, time, text, where, add } });
-        _body.Children.Add(Hint("Date, time (like 6:00 AM), what happens, and where."));
+        _body.Children.Add(stepHint);
     }
 
     // ---- the name/value details -------------------------------------------------------------------
@@ -390,8 +459,12 @@ public sealed class DetailsView : UserControl
         var template = CurrentTemplate;
         if (n.Details.Count == 0) _body.Children.Add(Hint("Nothing kept yet. Choose a kind above, or add any detail below."));
 
+        // A kind brings many suggested details; the empty ones wait behind a button so the filled ones are easy to see.
+        var empty = n.Details.Where(d => d.Value.Trim().Length == 0).ToList();
+        var fold = !_showEmpty && empty.Count > 4;
         foreach (var d in n.Details.ToList())
         {
+            if (fold && empty.Contains(d)) continue;
             var nameBox = new TextBox { Text = d.Name, Width = 190, FontWeight = FontWeights.SemiBold, BorderThickness = new Thickness(0, 0, 0, 1), VerticalAlignment = VerticalAlignment.Top, Padding = new Thickness(2, 3, 2, 3) };
             AutomationProperties.SetName(nameBox, "Detail name");
             nameBox.ToolTip = "The detail's name — change it to anything.";
@@ -401,7 +474,7 @@ public sealed class DetailsView : UserControl
             var row = new DockPanel { Margin = new Thickness(0, 3, 0, 3) };
             DockPanel.SetDock(nameBox, Dock.Left);
             row.Children.Add(nameBox);
-            var remove = Remove(d.Name, () => { n.Details.Remove(d); Touch(); Render(); });
+            var remove = Remove(d.Name, () => { n.Details.Remove(d); Touch(); Render(); }, d.Value.Trim().Length > 0 ? $"{d.Name} ({d.Value.Trim()})" : null);
             DockPanel.SetDock(remove, Dock.Right);
             remove.VerticalAlignment = VerticalAlignment.Top;
             row.Children.Add(remove);
@@ -413,6 +486,15 @@ public sealed class DetailsView : UserControl
                 _body.Children.Add(new TextBlock { Text = h, Margin = new Thickness(200, 0, 40, 2), TextWrapping = TextWrapping.Wrap, FontSize = 12, Foreground = (Brush)Application.Current.FindResource("Muted") });
         }
 
+        if (fold)
+        {
+            var names = string.Join(", ", empty.Take(4).Select(d => d.Name)) + (empty.Count > 4 ? ", …" : "");
+            var show = Small($"Show {empty.Count} empty details ({names})", (_, _) => { _showEmpty = true; Render(); },
+                             "Details the kind suggests that are not filled in yet.");
+            show.Margin = new Thickness(0, 6, 0, 0);
+            show.HorizontalAlignment = HorizontalAlignment.Left;
+            _body.Children.Add(show);
+        }
         AddDetail(n, template);
     }
 
@@ -463,6 +545,8 @@ public sealed class DetailsView : UserControl
             {
                 var box = Ui.TextBox(d.Name, d.Value);
                 box.TextChanged += (_, _) => { d.Value = box.Text; Touch(); };
+                // A link or an email gets its button at the top of the page as soon as Ron moves on.
+                if (d.Kind is DetailKind.Link or DetailKind.Email) box.LostFocus += (_, _) => LinkBar(_node!);
                 return box;
             }
         }
@@ -543,7 +627,7 @@ public sealed class DetailsView : UserControl
             NodeKind.Person => "Dated notes: what you talked about, news to remember, what you gave them.",
             _ => "Dated notes about this event.",
         };
-        if (n.Log.Count == 0) _body.Children.Add(Hint(hint));
+        _body.Children.Add(Hint(hint + (n.Kind == NodeKind.Thing ? " Pick the date, say what was done, the cost if any, then Add." : " Pick the date, write the note, then Add.")));
 
         var date = new DatePicker { SelectedDate = DateTime.Today, Width = 130 };
         AutomationProperties.SetName(date, "Entry date");
@@ -573,7 +657,7 @@ public sealed class DetailsView : UserControl
                 Text = $"{entry.Date.ToString("MMM d, yyyy", CultureInfo.CurrentCulture)}  ·  {entry.Text}" + (entry.Cost is { } c ? $"  ·  ${c}" : ""),
                 TextWrapping = TextWrapping.Wrap, Width = 620, VerticalAlignment = VerticalAlignment.Center,
             };
-            _body.Children.Add(Across(line, Remove("this entry", () => { n.Log.Remove(entry); Touch(); Render(); })));
+            _body.Children.Add(Across(line, Remove("this entry", () => { n.Log.Remove(entry); Touch(); Render(); }, $"the entry \"{entry.Text}\"")));
         }
         var total = n.Log.Select(l => decimal.TryParse(l.Cost, NumberStyles.Currency, CultureInfo.CurrentCulture, out var v) ? v : 0m).Sum();
         if (total > 0) _body.Children.Add(Hint($"Total: {total.ToString("C", CultureInfo.CurrentCulture)}", top: 4));
@@ -603,8 +687,7 @@ public sealed class DetailsView : UserControl
         save.Margin = new Thickness(0, 24, 0, 0);
         save.HorizontalAlignment = HorizontalAlignment.Left;
         _body.Children.Add(save);
-        _body.Children.Add(Hint($"Saved as you type, in {_s.Paths.TreeFile}. That file is not encrypted — never keep passwords here. " +
-                                $"The kinds and their details are in templates.json beside it, which you can edit too.", top: 8));
+        _body.Children.Add(Hint("Saved as you type. Not encrypted — never keep passwords here.", top: 8));
     }
 
     private void SaveAsKind(TreeNode n)

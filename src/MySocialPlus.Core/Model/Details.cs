@@ -97,6 +97,9 @@ public sealed class EventPerson
 {
     public string? PersonId { get; set; }
     public string Name { get; set; } = "";
+    /// <summary>For someone not in My Friends: how to reach them. A friend's come from their own details.</summary>
+    public string? Email { get; set; }
+    public string? Phone { get; set; }
 
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? Extra { get; set; }
