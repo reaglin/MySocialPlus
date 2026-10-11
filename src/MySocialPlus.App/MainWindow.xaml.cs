@@ -40,9 +40,37 @@ public partial class MainWindow : Window
         Title = _s.ReadsNetworks ? "MySocial+" : "MySocial+ — sample data";
         Tree.ItemsSource = _roots;
         NodeVm.ExpandedChanged += (_, _) => SaveTree();
+
+        _details = new Views.DetailsView(_s);
+        _details.Changed += _ => { _saveSoon.Stop(); _saveSoon.Start(); };
+        _details.OpenNode += n => SelectNode(n, about: true);
+        _details.AddProfile += p => SelectAndAddAccount(p);
+        _details.OpenProfile += (a, who) =>
+        {
+            if (a.ProfileUrl is not { } url) return;
+            if (a.IsReadable) OpenInBrowser(url); else OpenProfile($"{a.Info.Name} — {who}", url);
+        };
+        _group = new Views.GroupView();
+        _group.OpenNode += n => SelectNode(n, about: true);
+        _group.AddHere += g => AddTo(g);
+        _group.NewTopicHere += g => NewTopicIn(g);
+        _saveSoon.Tick += (_, _) =>
+        {
+            _saveSoon.Stop();
+            SaveTree();
+            // A name or date typed on the page shows in the tree, and a friend added from an event appears there.
+            if (_s.Tree.AllNodes().Count() != AllVms().Count()) RebuildTree(_current?.Node.Id);
+            foreach (var v in AllVms()) v.Refresh();
+            if (_current is not null && _details.Node == _current.Node)
+            {
+                ContentTitle.Text = _current.Name;
+                ContentSubtitle.Text = Subtitle(_current.Node, DateTimeOffset.Now);
+            }
+        };
+
         // Opens on What's new with nothing selected: selecting a node would mark it seen before Ron looked.
         RebuildTree();
-        _showWelcome = !_s.Tree.Accounts().Any();
+        _showWelcome = IsEmpty();
         ShowNode(_current);
 
         _timer.Tick += async (_, _) => await SyncAsync(force: false);
@@ -54,6 +82,14 @@ public partial class MainWindow : Window
         };
         Closed += (_, _) => { _timer.Stop(); _seenTimer.Stop(); _s.Dispose(); };
     }
+
+    private readonly Views.DetailsView _details;
+    private readonly Views.GroupView _group;
+    /// <summary>Saves a moment after the last keystroke on a page, not on every one.</summary>
+    private readonly DispatcherTimer _saveSoon = new() { Interval = TimeSpan.FromMilliseconds(700) };
+
+    /// <summary>Nothing in the tree yet: no accounts, people, events or things — show Getting started.</summary>
+    private bool IsEmpty() => !_s.Tree.AllNodes().Any(n => n.Kind is NodeKind.Account or NodeKind.Person or NodeKind.Event or NodeKind.Thing);
 
     // ---- the tree ------------------------------------------------------------------------------
 
@@ -127,8 +163,34 @@ public partial class MainWindow : Window
         _settingSort = false;
 
         Notices.ItemsSource = NoticesFor(node);
+        UpdateAddButton();
 
+        // Which page: a person, event or thing's details; a list of what is in a topic; or posts.
         var keys = node.AccountKeys();
+        var page = PageFor(node, keys.Count);
+        PersonTabs.Visibility = node.Kind == NodeKind.Person && keys.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        if (node.Kind == NodeKind.Person)
+        {
+            AboutTab.Content = $"About {node.Name}";
+            _settingTab = true;
+            (page == Page.Details ? AboutTab : PostsTab).IsChecked = true;
+            _settingTab = false;
+        }
+        if (page != Page.Posts)
+        {
+            _seenTimer.Stop();
+            _shownNodeId = node.Id;
+            ThreadList.ItemsSource = null;
+            ThreadList.Visibility = Visibility.Collapsed;
+            SortPanel.Visibility = Visibility.Collapsed;
+            EmptyText.Text = "";
+            if (page == Page.Details) { _details.Show(node); PageHost.Content = _details; }
+            else { _group.Show(node); PageHost.Content = _group; }
+            PageHost.Visibility = Visibility.Visible;
+            return;
+        }
+        PageHost.Visibility = Visibility.Collapsed;
+
         var items = _s.Cache.ForAccounts(keys);
 
         // Showing the same node again (a new order, new posts arriving) keeps marking what was new when
@@ -179,25 +241,90 @@ public partial class MainWindow : Window
         Notices.ItemsSource = list;
     }
 
-    /// <summary>What's new: every person and account with something new, nothing marked seen.</summary>
+    private enum Page { Posts, Details, Group }
+
+    private bool _settingTab;
+    /// <summary>For a person with a readable account: Ron's last choice of tab (posts first until he picks About).</summary>
+    private bool _personShowsAbout;
+
+    private Page PageFor(TreeNode node, int readable) => node.Kind switch
+    {
+        NodeKind.Event or NodeKind.Thing => Page.Details,
+        NodeKind.Person => readable == 0 || _personShowsAbout ? Page.Details : Page.Posts,
+        NodeKind.Topic or NodeKind.Root when node.Root.Id is SocialTree.MyEventsId or SocialTree.MyThingsId => Page.Group,
+        NodeKind.Topic or NodeKind.Root when node.Root.Id == SocialTree.MyFriendsId && readable == 0 => Page.Group,
+        _ => Page.Posts,
+    };
+
+    private void PersonTab_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_settingTab || _current is null) return;
+        _personShowsAbout = AboutTab.IsChecked == true;
+        ShowNode(_current);
+    }
+
+    /// <summary>What's new: what is coming up, and every person and account with something new. Nothing is marked seen.</summary>
     private void ShowOverview()
     {
         _shownNodeId = null;
         _seenTimer.Stop();
+        PersonTabs.Visibility = Visibility.Collapsed;
+        PageHost.Visibility = Visibility.Collapsed;
+        UpdateAddButton();
+        var today = DateOnly.FromDateTime(DateTime.Today);
+        var coming = ComingUp.Build(_s.Tree, today).Select(i => new ComingUpRow(i, today)).ToList();
         var rows = AllVms().Where(v => v.Badge > 0 && (v.Node.Kind == NodeKind.Person || v.Node.Account is { IsMine: true })).ToList();
         ContentTitle.Text = "What's new";
-        ContentSubtitle.Text = rows.Count > 0
-            ? "Everything with something new since you last looked. Open one here or in the tree; opening it marks it seen."
-            : "Nothing new since you last looked. Open anything in the tree to read it.";
+        ContentSubtitle.Text = coming.Count + rows.Count > 0
+            ? "What is coming up in the next 30 days, and what is new on social media since you last looked. Opening something here does not mark anything else seen."
+            : "Nothing coming up in the next 30 days, and nothing new. Open anything in the tree.";
         SortPanel.Visibility = Visibility.Collapsed;
         var notices = ProblemNotices(_s.Tree.Accounts().ToList());
         if (!_s.ReadsNetworks) notices.Insert(0, new Notice(SampleText));
         Notices.ItemsSource = notices;
         ThreadList.ItemsSource = null;
         ThreadList.Visibility = Visibility.Collapsed;
+        ComingUpList.ItemsSource = coming;
+        ComingUpHeading.Visibility = ComingUpList.Visibility = coming.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
         OverviewList.ItemsSource = rows;
-        Overview.Visibility = rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
-        EmptyText.Text = rows.Count > 0 ? "" : _s.Tree.Accounts().Any(a => a.IsReadable) ? "" : "Nothing is connected yet: Help ▸ Getting started shows the three steps.";
+        NewPostsHeading.Visibility = OverviewList.Visibility = rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        Overview.Visibility = coming.Count + rows.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        EmptyText.Text = coming.Count + rows.Count > 0 ? "" :
+            "Birthdays, events and dates you asked to be reminded of show here when they are near; so does anything new from people you follow. Help ▸ Getting started shows where to begin.";
+    }
+
+    /// <summary>A line under Coming up, ready for the template.</summary>
+    public sealed class ComingUpRow
+    {
+        public ComingUpRow(ComingUpItem i, DateOnly today)
+        {
+            Item = i;
+            When = ComingUp.When(i, today);
+            WhenBrush = i.IsOverdue(today) ? Brushes.Firebrick : (Brush)Application.Current.FindResource("Accent");
+            Glyph = i.Kind switch { ComingUpKind.Event => "", ComingUpKind.Birthday => "", _ => "" };
+        }
+        public ComingUpItem Item { get; }
+        public string When { get; }
+        public Brush WhenBrush { get; }
+        public string Glyph { get; }
+        public string Title => Item.Title;
+        public string? Detail => Item.Detail;
+        public string Spoken => $"{When}: {Title}" + (Detail is null ? "" : $", {Detail}");
+    }
+
+    private void ComingUp_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is ComingUpRow r) SelectNode(r.Item.Node, about: true);
+    }
+
+    /// <summary>Opens a node in the tree (from a link on a page): expands its parents and selects it.</summary>
+    private void SelectNode(TreeNode node, bool about = false)
+    {
+        if (AllVms().FirstOrDefault(v => v.Node.Id == node.Id) is not { } v) return;
+        if (about) _personShowsAbout = true;
+        _showWelcome = false;
+        for (var p = v.Parent; p is not null; p = p.Parent) p.IsExpanded = true;
+        if (v.IsSelected) ShowNode(v); else v.IsSelected = true;
     }
 
     private void OverviewRow_Click(object sender, RoutedEventArgs e)
@@ -222,14 +349,23 @@ public partial class MainWindow : Window
         {
             case NodeKind.Root when node.Id == SocialTree.MyPostsId:
                 return "Your own posts, with who replied to, liked or shared them. Your own posts are never counted as new.";
+            case NodeKind.Root when node.Id == SocialTree.MyEventsId:
+                return "Races, concerts, classes, trips — with who is going and the plan. Soonest first.";
+            case NodeKind.Root when node.Id == SocialTree.MyThingsId:
+                return "What you own and want to keep track of: details, reminders and history.";
             case NodeKind.Root:
-                return "Everyone in My Friends, all together. Open a topic or a person to see just them.";
+                return "Everyone in My Friends. Open a topic or a person to see just them.";
             case NodeKind.Topic:
-                var people = node.SelfAndDescendants().Count(n => n.Kind == NodeKind.Person);
-                return people == 1 ? "1 person in this topic." : $"{people} people in this topic.";
+                var count = node.SelfAndDescendants().Count(n => n.Kind is NodeKind.Person or NodeKind.Event or NodeKind.Thing);
+                var word = node.Root.Id switch { SocialTree.MyEventsId => "event", SocialTree.MyThingsId => "thing", _ => "person" };
+                return count == 1 ? $"1 {word} in this topic." : $"{count} {(word == "person" ? "people" : word + "s")} in this topic.";
+            case NodeKind.Event:
+                return Views.GroupView.EventLine(node, node.Event?.Start) is { Length: > 0 } line ? line : "No date yet — set it below.";
+            case NodeKind.Thing:
+                return Views.GroupView.ThingLine(node) is { Length: > 0 } t ? t : "Fill in what you want to keep below.";
             case NodeKind.Person:
                 var accounts = node.Children.Where(c => c.Account is not null).Select(c => c.Account!).ToList();
-                return accounts.Count == 0 ? "No accounts yet."
+                return accounts.Count == 0 ? (node.TypeName is { } kind ? $"{kind}. No social media linked — that is fine; right-click to add a profile." : "No social media linked — that is fine; right-click to add a profile.")
                     : "On " + string.Join(", ", accounts.Select(a => a.IsReadable ? $"{a.Info.Name} (@{a.Handle}, {Checked(a)})" : $"{a.Info.Name} (profile only)")) + ".";
             default:
                 var acc = node.Account!;
@@ -292,7 +428,8 @@ public partial class MainWindow : Window
                     var text = a.IsMine
                         ? $"Your {a.Info.Name} account: reading your own {a.Info.Name} posts is not built yet, so it has no number."
                         : $"{who} is {also}on {a.Info.Name}. {a.Info.WhyNot}";
-                    list.Add(url is null ? new Notice(text)
+                    // A friend's page already has the big Open profile button; the line only explains.
+                    list.Add(url is null || (!a.IsMine && node.Kind == NodeKind.Person) ? new Notice(text)
                         : new Notice(text, $"Open {a.Info.Name} profile", () => OpenProfile(a.Info.Name + " — " + (a.IsMine ? "you" : who), url)));
                 }
             }
@@ -447,11 +584,92 @@ public partial class MainWindow : Window
     // ---- editing the tree ----------------------------------------------------------------------
 
     /// <summary>The topic (or My Friends) a new person or topic goes into, from what is selected.</summary>
+    /// <summary>The group (a topic or a heading) new things go into, under <paramref name="rootId"/>, from what is selected.</summary>
+    private TreeNode TargetGroup(string rootId)
+    {
+        var root = _s.Tree.Roots.First(r => r.Id == rootId);
+        for (var n = _current?.Node; n is not null; n = n.Parent)
+            if (n.Root.Id == rootId && (n.Kind == NodeKind.Topic || n.Kind == NodeKind.Root)) return n;
+        return root;
+    }
+
+    /// <summary>Where a new topic goes: the selected heading (My Friends when it is My Posts or nothing).</summary>
     private TreeNode TargetTopic()
     {
-        for (var n = _current?.Node; n is not null; n = n.Parent)
-            if (n.Kind == NodeKind.Topic || n.Id == SocialTree.MyFriendsId) return n;
-        return _s.Tree.MyFriends;
+        var rootId = _current?.Node.Root.Id is { } r && r != SocialTree.MyPostsId ? r : SocialTree.MyFriendsId;
+        return TargetGroup(rootId);
+    }
+
+    private void UpdateAddButton()
+    {
+        var root = _current?.Node.Root.Id;
+        (AddButton.Content, AddButton.ToolTip) = root switch
+        {
+            SocialTree.MyEventsId => ("New event", "Plan an event in the selected topic: a race, a concert, a class, a trip."),
+            SocialTree.MyThingsId => ("New thing", "Keep track of something you own in the selected topic: a car, a house, an appliance."),
+            _ => ("Add person", "Add someone to the selected topic: their name, and their Facebook profile or other account if you like."),
+        };
+    }
+
+    private void AddButton_Click(object sender, RoutedEventArgs e) => AddTo(_current?.Node.Root ?? _s.Tree.MyFriends);
+
+    /// <summary>The add that fits a heading: a person, an event or a thing.</summary>
+    private void AddTo(TreeNode group)
+    {
+        switch (group.Root.Id)
+        {
+            case SocialTree.MyEventsId: NewItem(TemplateFor.Event, group.Kind is NodeKind.Topic or NodeKind.Root ? group : TargetGroup(SocialTree.MyEventsId)); break;
+            case SocialTree.MyThingsId: NewItem(TemplateFor.Thing, group.Kind is NodeKind.Topic or NodeKind.Root ? group : TargetGroup(SocialTree.MyThingsId)); break;
+            default: AddPersonIn(group.Kind is NodeKind.Topic or NodeKind.Root && group.Root.Id == SocialTree.MyFriendsId ? group : TargetGroup(SocialTree.MyFriendsId)); break;
+        }
+    }
+
+    private void NewEvent_Click(object sender, RoutedEventArgs e) => NewItem(TemplateFor.Event, TargetGroup(SocialTree.MyEventsId));
+
+    private void NewThing_Click(object sender, RoutedEventArgs e) => NewItem(TemplateFor.Thing, TargetGroup(SocialTree.MyThingsId));
+
+    private void NewItem(TemplateFor kind, TreeNode group)
+    {
+        var dlg = new NewItemWindow(_s.Templates, kind, group.Kind == NodeKind.Root ? group.Name : TopicPath(group)) { Owner = this };
+        if (dlg.ShowDialog() != true || dlg.Result is not { } node) return;
+        group.Expanded = true;
+        Apply(() => _s.Tree.Add(group, node), node.Id);
+    }
+
+
+    private void NewTopic_Click(object sender, RoutedEventArgs e) => NewTopicIn(TargetTopic());
+
+    private void NewTopicIn(TreeNode parent)
+    {
+        if (parent.Kind is not (NodeKind.Topic or NodeKind.Root) || parent.Id == SocialTree.MyPostsId) parent = TargetTopic();
+        var where = parent.Kind == NodeKind.Root ? $"under {parent.Name}" : $"inside “{parent.Name}”";
+        var example = parent.Root.Id switch
+        {
+            SocialTree.MyEventsId => "Running, Concerts",
+            SocialTree.MyThingsId => "Vehicles, Kitchen",
+            _ => "Family, Colleagues",
+        };
+        var name = TextPrompt.Ask(this, "New topic", $"Name the new topic (like {example}). It goes {where}; you can drag it somewhere else later.", "");
+        if (name is null) return;
+        var topic = TreeNode.Topic(name);
+        Apply(() => _s.Tree.Add(parent, topic), topic.Id);
+    }
+
+    private void AddPerson_Click(object sender, RoutedEventArgs e) => AddPersonIn(TargetGroup(SocialTree.MyFriendsId));
+
+    private void AddPersonIn(TreeNode group)
+    {
+        var dlg = new PersonWindow(_s.Tree, group, _s.Templates) { Owner = this };
+        if (dlg.ShowDialog() != true || dlg.Result is not { } r) return;
+        var person = TreeNode.Person(r.Name);
+        r.Kind?.ApplyTo(person);
+        _personShowsAbout = r.Account is not { IsReadable: true };
+        Apply(() =>
+        {
+            _s.Tree.Add(r.Topic, person);
+            if (r.Account is { } a) _s.Tree.Add(person, TreeNode.ForAccount(a));
+        }, person.Id);
+        if (r.Account is { IsReadable: true }) _ = SyncAsync(force: false);
     }
 
     private void Apply(Action change, string? select = null)
@@ -470,29 +688,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private void NewTopic_Click(object sender, RoutedEventArgs e)
-    {
-        var parent = TargetTopic();
-        var where = parent.Id == SocialTree.MyFriendsId ? "under My Friends" : $"inside “{parent.Name}”";
-        var name = TextPrompt.Ask(this, "New topic", $"Name the new topic. It goes {where}; you can drag it somewhere else later.", "");
-        if (name is null) return;
-        var topic = TreeNode.Topic(name);
-        Apply(() => _s.Tree.Add(parent, topic), topic.Id);
-    }
-
-    private void AddPerson_Click(object sender, RoutedEventArgs e)
-    {
-        var dlg = new PersonWindow(_s.Tree, TargetTopic()) { Owner = this };
-        if (dlg.ShowDialog() != true || dlg.Result is not { } r) return;
-        var person = TreeNode.Person(r.Name);
-        Apply(() =>
-        {
-            _s.Tree.Add(r.Topic, person);
-            if (r.Account is { } a) _s.Tree.Add(person, TreeNode.ForAccount(a));
-        }, person.Id);
-        if (r.Account is { IsReadable: true }) _ = SyncAsync(force: false);
-    }
-
     private void AddAccount_Click(object sender, RoutedEventArgs e)
     {
         var person = _current is null ? null : SocialTree.PersonOf(_current.Node);
@@ -503,6 +698,12 @@ public partial class MainWindow : Window
                             "Add an account", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
+        SelectAndAddAccount(person);
+    }
+
+    /// <summary>Links a friend's profile (Facebook or another network) to them.</summary>
+    private void SelectAndAddAccount(TreeNode person)
+    {
         var dlg = new PersonWindow(_s.Tree, person) { Owner = this };
         if (dlg.ShowDialog() != true || dlg.Result?.Account is not { } a) return;
         var node = TreeNode.ForAccount(a);
@@ -515,7 +716,7 @@ public partial class MainWindow : Window
         if (_current is not { } v) return;
         if (v.Node.Kind is NodeKind.Root or NodeKind.Account)
         {
-            MessageBox.Show(this, v.Node.Kind == NodeKind.Root ? "My Posts and My Friends keep their names." : "An account is named by its network and handle. Rename the person instead.",
+            MessageBox.Show(this, v.Node.Kind == NodeKind.Root ? "The four headings keep their names." : "An account is named by its network and handle. Rename the person instead.",
                             "Rename", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
@@ -529,15 +730,17 @@ public partial class MainWindow : Window
         var n = v.Node;
         if (n.Kind == NodeKind.Root)
         {
-            MessageBox.Show(this, "My Posts and My Friends cannot be deleted.", "Delete", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(this, "The four headings cannot be deleted.", "Delete", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
-        var people = n.SelfAndDescendants().Count(x => x.Kind == NodeKind.Person);
+        var inside = n.SelfAndDescendants().Count(x => x.Kind is NodeKind.Person or NodeKind.Event or NodeKind.Thing);
         var what = n.Kind switch
         {
-            NodeKind.Topic when people > 0 => $"the topic “{n.Name}” and the {Plural(people, "person")} in it",
+            NodeKind.Topic when inside > 0 => $"the topic “{n.Name}” and everything in it ({Plural(inside, "item")})",
             NodeKind.Topic => $"the topic “{n.Name}”",
-            NodeKind.Person => $"{n.Name}",
+            NodeKind.Person => $"{n.Name}, and everything you kept about them",
+            NodeKind.Event => $"the event “{n.Name}”",
+            NodeKind.Thing => $"“{n.Name}”, with its details and history",
             _ => $"the {n.Account!.Info.Name} account {n.Account.Handle}",
         };
         var mine = n.SelfAndDescendants().Where(x => x.Account is { IsMine: true, Network: Network.Bluesky }).Select(x => x.Account!).ToList();
@@ -569,21 +772,31 @@ public partial class MainWindow : Window
             return mi;
         }
         var node = _current?.Node;
-        var isFriendSide = node is not null && node.Root.Id == SocialTree.MyFriendsId;
-        if (node is null || isFriendSide)
+        switch (node?.Root.Id)
         {
-            Item("New topic…", NewTopic_Click);
-            Item("Add a person…", AddPerson_Click);
+            case null or SocialTree.MyFriendsId:
+                Item("New topic…", NewTopic_Click);
+                Item("Add a person…", AddPerson_Click);
+                break;
+            case SocialTree.MyEventsId:
+                Item("New topic…", NewTopic_Click);
+                Item("New event…", NewEvent_Click);
+                break;
+            case SocialTree.MyThingsId:
+                Item("New topic…", NewTopic_Click);
+                Item("New thing…", NewThing_Click);
+                break;
         }
         if (node is not null && SocialTree.PersonOf(node) is not null) Item("Add an account to this person…", AddAccount_Click);
         if (node?.Account is { } a && a.ProfileUrl is { } url) Item(a.IsReadable ? $"Open on {a.Info.Name}" : "Open profile", (_, _) =>
         {
             if (a.IsReadable) OpenInBrowser(url); else OpenProfile($"{a.Info.Name} — {SocialTree.PersonOf(node)?.Name ?? "you"}", url);
         });
-        if (node?.Kind is NodeKind.Person or NodeKind.Topic)
+        if (node?.Kind is NodeKind.Person or NodeKind.Topic or NodeKind.Event or NodeKind.Thing)
         {
             var move = new MenuItem { Header = "Move to" };
-            var targets = new[] { _s.Tree.MyFriends }.Concat(_s.Tree.MyFriends.SelfAndDescendants().Where(t => t.Kind == NodeKind.Topic))
+            var home = node.Root;
+            var targets = new[] { home }.Concat(home.SelfAndDescendants().Where(t => t.Kind == NodeKind.Topic))
                                                        .Where(t => !ReferenceEquals(t, node.Parent) && SocialTree.WhyNotAllowed(t, node) is null);
             foreach (var t in targets)
             {
@@ -595,7 +808,7 @@ public partial class MainWindow : Window
             menu.Items.Add(move);
         }
         if (menu.Items.Count > 0) menu.Items.Add(new Separator());
-        Item("Rename…", Rename_Click, node?.Kind is NodeKind.Topic or NodeKind.Person);
+        Item("Rename…", Rename_Click, node?.Kind is NodeKind.Topic or NodeKind.Person or NodeKind.Event or NodeKind.Thing);
         Item("Delete", Delete_Click, node is not null && node.Kind != NodeKind.Root);
     }
 
@@ -620,7 +833,7 @@ public partial class MainWindow : Window
     private void Tree_PreviewMouseMove(object sender, MouseEventArgs e)
     {
         if (e.LeftButton != MouseButtonState.Pressed || _dragItem is null) return;
-        if (_dragItem.Node.Kind is not (NodeKind.Person or NodeKind.Topic)) return;
+        if (_dragItem.Node.Kind is not (NodeKind.Person or NodeKind.Topic or NodeKind.Event or NodeKind.Thing)) return;
         var d = e.GetPosition(Tree) - _dragStart;
         if (Math.Abs(d.X) < SystemParameters.MinimumHorizontalDragDistance && Math.Abs(d.Y) < SystemParameters.MinimumVerticalDragDistance) return;
         var item = _dragItem;
@@ -633,7 +846,7 @@ public partial class MainWindow : Window
     {
         if (e.Data.GetData(typeof(NodeVm)) is not NodeVm dragged) return null;
         if (e.OriginalSource is not DependencyObject d || FindParent<TreeViewItem>(d) is not { DataContext: NodeVm over }) return null;
-        var parent = over.Node.Kind == NodeKind.Person ? over.Node.Parent! : over.Node;
+        var parent = over.Node.Kind is NodeKind.Person or NodeKind.Event or NodeKind.Thing or NodeKind.Account ? (SocialTree.PersonOf(over.Node) ?? over.Node).Parent! : over.Node;
         if (ReferenceEquals(parent, dragged.Node.Parent)) return (parent, "It is already there.");
         return (parent, SocialTree.WhyNotAllowed(parent, dragged.Node));
     }

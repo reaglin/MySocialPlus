@@ -11,12 +11,13 @@ namespace MySocialPlus.App.Windows;
 /// </summary>
 public sealed class PersonWindow : Window
 {
-    public sealed record Answer(string Name, TreeNode Topic, Account? Account);
+    public sealed record Answer(string Name, TreeNode Topic, Account? Account, Template? Kind);
 
     private readonly SocialTree _tree;
     private readonly TreeNode? _person;
     private readonly TextBox _name;
     private readonly ComboBox _topic;
+    private readonly ComboBox _kind = new() { DisplayMemberPath = "Name" };
     private readonly ComboBox _network;
     private readonly TextBox _handle;
     private readonly TextBlock _networkHint;
@@ -26,9 +27,12 @@ public sealed class PersonWindow : Window
     public Answer? Result { get; private set; }
 
     /// <param name="at">A topic (or My Friends) to add a new person to; or a person to add an account to.</param>
-    public PersonWindow(SocialTree tree, TreeNode at)
+    public PersonWindow(SocialTree tree, TreeNode at, TemplateSet? templates = null)
     {
         _tree = tree;
+        AutomationProperties.SetName(_kind, "Kind of person");
+        foreach (var k in templates?.For(TemplateFor.Person) ?? []) _kind.Items.Add(k);
+        _kind.SelectedIndex = _kind.Items.Count > 0 ? 0 : -1;
         _person = at.Kind == NodeKind.Person ? at : null;
         Title = _person is null ? "Add a person" : $"Add an account for {_person.Name}";
         Width = 500;
@@ -47,7 +51,7 @@ public sealed class PersonWindow : Window
 
         _network = new ComboBox { DisplayMemberPath = "Name" };
         AutomationProperties.SetName(_network, "Network");
-        foreach (var n in new[] { Network.Bluesky, Network.Facebook, Network.Instagram, Network.X, Network.Threads, Network.LinkedIn, Network.YouTube, Network.Reddit, Network.Mastodon })
+        foreach (var n in new[] { Network.Facebook, Network.Bluesky, Network.Instagram, Network.X, Network.Threads, Network.LinkedIn, Network.YouTube, Network.Reddit, Network.Mastodon })
             _network.Items.Add(NetworkInfo.For(n));
         _network.SelectedIndex = 0;
         _network.SelectionChanged += (_, _) => UpdateHints();
@@ -66,6 +70,12 @@ public sealed class PersonWindow : Window
             stack.Children.Add(_name);
             stack.Children.Add(Ui.Label("Topic"));
             stack.Children.Add(_topic);
+            if (_kind.Items.Count > 0)
+            {
+                stack.Children.Add(Ui.Label("Kind"));
+                stack.Children.Add(_kind);
+                stack.Children.Add(Ui.Text("Adds the details usually kept: birthday, children, likes, phone, email, a Google Photos link… all optional.", hint: true, top: 4));
+            }
         }
         else
         {
@@ -74,7 +84,7 @@ public sealed class PersonWindow : Window
         stack.Children.Add(Ui.Label("Network"));
         stack.Children.Add(_network);
         stack.Children.Add(_networkHint);
-        stack.Children.Add(Ui.Label(_person is null ? "Their handle or profile address (you can leave it empty)" : "Their handle or profile address"));
+        stack.Children.Add(Ui.Label(_person is null ? "Their profile address or handle (you can leave it empty)" : "Their profile address or handle"));
         stack.Children.Add(_handle);
         stack.Children.Add(_handleHint);
         stack.Children.Add(_error);
@@ -97,7 +107,7 @@ public sealed class PersonWindow : Window
         _handleHint.Text = info.Network switch
         {
             Network.Bluesky => "Like sarahlee.bsky.social — it is under their name on their Bluesky profile.",
-            Network.Facebook => "The part after facebook.com/ in their profile address, like sarah.lee.123 — or paste the whole address.",
+            Network.Facebook => "Open their profile on Facebook and copy the address from the browser, like www.facebook.com/jane.sample.42 — paste it here.",
             Network.Mastodon or Network.Rss => "Paste the full address of their profile, like https://mastodon.social/@name.",
             _ => "Their user name on " + info.Name + ", or paste the address of their profile page.",
         };
@@ -115,13 +125,10 @@ public sealed class PersonWindow : Window
         if (handle.Length > 0)
         {
             var net = Info.Network;
+            // A pasted profile address (www.facebook.com/jane.sample.42, bsky.app/profile/…) becomes the handle.
+            handle = Info.NormalizeHandle(handle);
             if (net == Network.Bluesky)
             {
-                // A pasted profile address: https://bsky.app/profile/name.bsky.social
-                var marker = "/profile/";
-                var at = handle.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-                if (at >= 0) handle = handle[(at + marker.Length)..].Split('/')[0];
-                handle = handle.TrimStart('@');
                 if (!handle.Contains('.', StringComparison.Ordinal))
                 {
                     _error.Text = "A Bluesky handle has a dot in it, like sarahlee.bsky.social. Check it on their profile.";
@@ -142,7 +149,7 @@ public sealed class PersonWindow : Window
             }
         }
         var topic = _person?.Parent ?? ((Tuple<TreeNode, string>)_topic.SelectedItem).Item1;
-        Result = new Answer(_person?.Name ?? name, topic, account);
+        Result = new Answer(_person?.Name ?? name, topic, account, _kind.SelectedItem as Template);
         DialogResult = true;
     }
 }

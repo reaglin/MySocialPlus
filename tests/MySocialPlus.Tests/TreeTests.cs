@@ -113,6 +113,29 @@ public class TreeTests
         finally { Directory.Delete(dir, true); }
     }
 
+    [Theory]
+    [InlineData("www.facebook.com/jane.sample.42", "jane.sample.42")]
+    [InlineData("https://www.facebook.com/jane.sample.42/", "jane.sample.42")]
+    [InlineData("facebook.com/jane.sample.42?ref=bookmarks", "jane.sample.42")]
+    [InlineData("https://m.facebook.com/jane.sample.42", "jane.sample.42")]
+    [InlineData("jane.sample.42", "jane.sample.42")]
+    [InlineData("https://www.facebook.com/profile.php?id=100012345", "https://www.facebook.com/profile.php?id=100012345")]
+    public void A_pasted_Facebook_address_becomes_the_handle(string pasted, string handle)
+    {
+        var fb = NetworkInfo.For(Network.Facebook);
+        var h = fb.NormalizeHandle(pasted);
+        Assert.Equal(handle, h);
+        Assert.StartsWith("https://www.facebook.com/", fb.ProfileUrl(h), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Other_networks_take_pasted_addresses_too()
+    {
+        Assert.Equal("sarah.bsky.social", NetworkInfo.For(Network.Bluesky).NormalizeHandle("https://bsky.app/profile/sarah.bsky.social"));
+        Assert.Equal("someone", NetworkInfo.For(Network.Instagram).NormalizeHandle("instagram.com/someone/"));
+        Assert.Equal("https://mastodon.social/@ann", NetworkInfo.For(Network.Mastodon).NormalizeHandle("mastodon.social/@ann"));
+    }
+
     [Fact]
     public void An_unreadable_network_has_no_account_keys_so_no_badge()
     {

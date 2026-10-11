@@ -142,6 +142,8 @@
             <MenuItem Header="_Tree">
                 <MenuItem Header="New _topic…" Click="NewTopic_Click" />
                 <MenuItem Header="Add a _person…" Click="AddPerson_Click" />
+                <MenuItem Header="New _event…" Click="NewEvent_Click" />
+                <MenuItem Header="New t_hing…" Click="NewThing_Click" />
                 <MenuItem Header="Add an _account to this person…" Click="AddAccount_Click" />
                 <Separator />
                 <MenuItem Header="_Rename…" InputGestureText="F2" Click="Rename_Click" />
@@ -185,7 +187,7 @@
                            Text="A number means something new since you last opened that node. Staying on a person or topic for a moment marks everything inside it as seen." />
                 <WrapPanel DockPanel.Dock="Bottom" Margin="8">
                     <Button Content="New topic" Click="NewTopic_Click" Margin="0,0,6,6" ToolTip="Make a topic under My Friends, like Family or Colleagues." />
-                    <Button Content="Add person" Click="AddPerson_Click" Margin="0,0,6,6" ToolTip="Add someone to the selected topic, with their account on a network." />
+                    <Button x:Name="AddButton" Content="Add person" Click="AddButton_Click" Margin="0,0,6,6" ToolTip="Adds to the selected heading: a person, an event or a thing." />
                 </WrapPanel>
                 <TreeView x:Name="Tree" BorderThickness="0" Background="Transparent" Padding="4"
                           SelectedItemChanged="Tree_SelectedItemChanged" KeyDown="Tree_KeyDown"
@@ -244,45 +246,58 @@
                     <StackPanel Margin="32,24" MaxWidth="720" HorizontalAlignment="Left">
                         <TextBlock Style="{StaticResource H1}" Text="Welcome to MySocial+" />
                         <TextBlock TextWrapping="Wrap" Margin="0,10,0,0" FontSize="15"
-                                   Text="Your social media in your order, not an algorithm's. On the left is your tree. My Posts holds your own accounts: open one to see who replied to, liked or shared what you posted. My Friends holds the people you follow, in topics you make, like Family or Colleagues. Everything is in time order, newest first." />
+                                   Text="One place for the people, plans and things in your life — in your order, not an algorithm's. Use any part of it; none of it needs social media." />
                         <TextBlock Style="{StaticResource Hint}" Margin="0,8,0,0"
-                                   Text="A number on a node is how much is new since you last opened it. Opening a node marks what is in it as seen. MySocial+ checks for new posts every 15 minutes while it is open." />
+                                   Text="On the left is your tree. My Friends: people, with what you want to remember about them (birthdays, children, likes) and a link to their Facebook profile or photos. My Events: races, concerts, classes and trips, with who is going and the plan. My Things: your car, your house, a coffee maker — anything you own, with its details and history. My Posts: your own social media, if you connect it." />
 
-                        <TextBlock Text="Three steps to start" FontWeight="SemiBold" FontSize="16" Margin="0,24,0,8" />
+                        <TextBlock Text="Start anywhere" FontWeight="SemiBold" FontSize="16" Margin="0,24,0,8" />
                         <Border BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,8">
                             <DockPanel>
-                                <Button x:Name="WelcomeConnect" DockPanel.Dock="Right" Style="{StaticResource Primary}" Content="Connect Bluesky…" Click="BlueskySignIn_Click" VerticalAlignment="Center" />
+                                <Button DockPanel.Dock="Right" Style="{StaticResource Primary}" Content="Add a friend…" Click="AddPerson_Click" VerticalAlignment="Center" />
                                 <StackPanel Margin="0,0,16,0">
-                                    <TextBlock Text="1. Connect your Bluesky account" FontWeight="SemiBold" />
+                                    <TextBlock Text="A friend" FontWeight="SemiBold" />
+                                    <TextBlock Style="{StaticResource Hint}"
+                                               Text="Their name, and if you like the address of their Facebook profile — then one click opens it. Add their birthday, phone, email and anything else on their page." />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,8">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="New event…" Click="NewEvent_Click" VerticalAlignment="Center" />
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="An event" FontWeight="SemiBold" />
+                                    <TextBlock Style="{StaticResource Hint}"
+                                               Text="Something you are going to, with the friends going with you, the agenda, and a button to email the whole group." />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+                        <Border BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,8">
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Content="New thing…" Click="NewThing_Click" VerticalAlignment="Center" />
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="A thing you own" FontWeight="SemiBold" />
+                                    <TextBlock Style="{StaticResource Hint}"
+                                               Text="Your car (plate, VIN, when the registration renews, its service history), your house, an appliance and its warranty…" />
+                                </StackPanel>
+                            </DockPanel>
+                        </Border>
+
+                        <TextBlock Text="Your social media (optional)" FontWeight="SemiBold" FontSize="16" Margin="0,20,0,8" />
+                        <Border BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,8">
+                            <DockPanel>
+                                <StackPanel DockPanel.Dock="Right" VerticalAlignment="Center">
+                                    <Button x:Name="WelcomeConnect" Content="Connect Bluesky…" Click="BlueskySignIn_Click" Margin="0,0,0,6" />
+                                    <Button x:Name="WelcomeImport" Content="Choose people…" Click="ImportFollows_Click" />
+                                </StackPanel>
+                                <StackPanel Margin="0,0,16,0">
+                                    <TextBlock Text="Bluesky" FontWeight="SemiBold" />
                                     <TextBlock x:Name="WelcomeConnectHint" Style="{StaticResource Hint}"
-                                               Text="You make an app password in Bluesky and paste it here. MySocial+ never sees your real password, and the app password stays on this computer." />
+                                               Text="Connect with an app password (never your real password), then choose people you follow. MySocial+ shows their posts in time order with a number for what is new, and the replies and likes on yours." />
                                 </StackPanel>
                             </DockPanel>
                         </Border>
-                        <Border BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,8">
-                            <DockPanel>
-                                <Button x:Name="WelcomeImport" DockPanel.Dock="Right" Content="Choose people…" Click="ImportFollows_Click" VerticalAlignment="Center" />
-                                <StackPanel Margin="0,0,16,0">
-                                    <TextBlock Text="2. Bring in the people you follow" FontWeight="SemiBold" />
-                                    <TextBlock Style="{StaticResource Hint}"
-                                               Text="Pick the people you care about from everyone you follow on Bluesky, and the topic each goes in. You can also add someone by hand with Add person." />
-                                </StackPanel>
-                            </DockPanel>
-                        </Border>
-                        <Border BorderBrush="{StaticResource Line}" BorderThickness="1" CornerRadius="8" Padding="16,12" Margin="0,0,0,8">
-                            <DockPanel>
-                                <Button DockPanel.Dock="Right" Content="New topic…" Click="NewTopic_Click" VerticalAlignment="Center" />
-                                <StackPanel Margin="0,0,16,0">
-                                    <TextBlock Text="3. Sort people into topics" FontWeight="SemiBold" />
-                                    <TextBlock Style="{StaticResource Hint}"
-                                               Text="Make topics under My Friends, then drag a person onto a topic to move them. Right-click anything in the tree for more." />
-                                </StackPanel>
-                            </DockPanel>
-                        </Border>
-
-                        <TextBlock Text="About Facebook" FontWeight="SemiBold" FontSize="16" Margin="0,20,0,6" />
-                        <TextBlock Style="{StaticResource Hint}"
-                                   Text="Facebook comes next. It will show the comments on your own Facebook posts, though Facebook usually hides who wrote them. Facebook does not let any program read your friends' posts, so a friend's Facebook account opens their profile inside MySocial+ instead, without a number." />
+                        <TextBlock Style="{StaticResource Hint}" Margin="0,4,0,0"
+                                   Text="Facebook does not let any program read your friends' posts, so a friend's Facebook profile opens inside MySocial+ instead. Reading the comments on your own Facebook posts comes later." />
                     </StackPanel>
                 </ScrollViewer>
 
@@ -302,6 +317,13 @@
                                 <TextBlock x:Name="ContentTitle" Style="{StaticResource H1}" />
                             </DockPanel>
                             <TextBlock x:Name="ContentSubtitle" Style="{StaticResource Hint}" Margin="0,4,0,0" />
+                            <!-- A person: what they posted, or what Ron keeps about them. -->
+                            <StackPanel x:Name="PersonTabs" Orientation="Horizontal" Margin="0,10,0,0" Visibility="Collapsed">
+                                <RadioButton x:Name="AboutTab" GroupName="person" Style="{StaticResource {x:Type ToggleButton}}" Padding="14,4"
+                                             Checked="PersonTab_Checked" AutomationProperties.Name="About this person" />
+                                <RadioButton x:Name="PostsTab" GroupName="person" Content="Posts" Style="{StaticResource {x:Type ToggleButton}}" Padding="14,4"
+                                             Margin="6,0,0,0" Checked="PersonTab_Checked" />
+                            </StackPanel>
                             <ItemsControl x:Name="Notices" Margin="0,8,0,0" Focusable="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
@@ -321,8 +343,32 @@
                         <TextBlock x:Name="EmptyText" Style="{StaticResource Hint}" FontSize="15" Margin="24" MaxWidth="560"
                                    HorizontalAlignment="Left" VerticalAlignment="Top" />
                         <!-- What's new: where the window opens. Nothing is marked seen until Ron opens a node. -->
+                        <ContentControl x:Name="PageHost" Focusable="False" Visibility="Collapsed" />
                         <ScrollViewer x:Name="Overview" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
-                            <ItemsControl x:Name="OverviewList" Margin="20,12" MaxWidth="640" HorizontalAlignment="Left" Focusable="False">
+                          <StackPanel Margin="20,12" MaxWidth="680" HorizontalAlignment="Left">
+                            <TextBlock x:Name="ComingUpHeading" Text="Coming up" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,6" />
+                            <ItemsControl x:Name="ComingUpList" Focusable="False" Margin="0,0,0,12">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Click="ComingUp_Click" Tag="{Binding}" Margin="0,0,0,6" Padding="12,7"
+                                                HorizontalContentAlignment="Stretch" Background="White" BorderBrush="{StaticResource Line}"
+                                                AutomationProperties.Name="{Binding Spoken}">
+                                            <DockPanel MinWidth="460">
+                                                <TextBlock DockPanel.Dock="Left" FontFamily="Segoe MDL2 Assets" Text="{Binding Glyph}" Foreground="{StaticResource Accent}"
+                                                           Width="24" VerticalAlignment="Center" />
+                                                <TextBlock DockPanel.Dock="Left" Text="{Binding When}" Width="170" VerticalAlignment="Center" FontWeight="SemiBold"
+                                                           Foreground="{Binding WhenBrush}" />
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Text="{Binding Detail}" Style="{StaticResource Hint}" Visibility="{Binding Detail, Converter={StaticResource ShowIfAny}}" />
+                                                </StackPanel>
+                                            </DockPanel>
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock x:Name="NewPostsHeading" Text="New on your social media" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,6" />
+                            <ItemsControl x:Name="OverviewList" Focusable="False">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type vm:NodeVm}">
                                         <Button Click="OverviewRow_Click" Tag="{Binding}" Margin="0,0,0,6" Padding="12,8"
@@ -341,6 +387,7 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                          </StackPanel>
                         </ScrollViewer>
                         <ListBox x:Name="ThreadList" BorderThickness="0" Padding="16,12" Background="#FAFBFC"
                                  ItemTemplate="{StaticResource ThreadTemplate}" HorizontalContentAlignment="Stretch"

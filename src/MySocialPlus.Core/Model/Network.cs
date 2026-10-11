@@ -57,6 +57,33 @@ public sealed record NetworkInfo(
         _ => new(n, "Other", false, false, "MySocial+ cannot read this network.", "someone", null),
     };
 
+    /// <summary>
+    /// What Ron pasted, as a handle: "www.facebook.com/jane.sample.42", "https://facebook.com/jane.sample.42/"
+    /// and "@jane.sample.42" all become "jane.sample.42". An address on another site is kept whole.
+    /// Facebook's numeric-id addresses (profile.php?id=…) are kept whole too, since they have no handle.
+    /// </summary>
+    public string NormalizeHandle(string input)
+    {
+        var s = input.Trim();
+        if (ProfileUrlFormat is null || s.Contains("profile.php", StringComparison.OrdinalIgnoreCase))
+            return s.Contains('/', StringComparison.Ordinal) && !s.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? "https://" + s : s;
+        var host = new Uri(string.Format(System.Globalization.CultureInfo.InvariantCulture, ProfileUrlFormat, "x")).Host;   // "www.facebook.com"
+        var bare = host.StartsWith("www.", StringComparison.Ordinal) ? host[4..] : host;
+        var noScheme = System.Text.RegularExpressions.Regex.Replace(s, "^https?://", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        foreach (var prefix in new[] { "www." + bare + "/", "m." + bare + "/", bare + "/" })
+            if (noScheme.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                var rest = noScheme[prefix.Length..].Split('?', '#')[0].Trim('/');
+                if (Network == Network.Bluesky && rest.StartsWith("profile/", StringComparison.OrdinalIgnoreCase)) rest = rest[8..];
+                if (Network == Network.Reddit && rest.StartsWith("user/", StringComparison.OrdinalIgnoreCase)) rest = rest[5..];
+                if (Network == Network.LinkedIn && rest.StartsWith("in/", StringComparison.OrdinalIgnoreCase)) rest = rest[3..];
+                return rest.Split('/')[0].TrimStart('@');
+            }
+        return s.StartsWith("http", StringComparison.OrdinalIgnoreCase) || s.Contains('/', StringComparison.Ordinal)
+            ? (s.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? s : "https://" + s)
+            : s.TrimStart('@');
+    }
+
     /// <summary>The profile address for a handle, or the handle itself when it is already an address.</summary>
     public string? ProfileUrl(string handle)
     {
